@@ -85,7 +85,18 @@ export function InputSubtitle({ isPet = false }: InputSubtitleProps) {
     };
   }, [isPet, handleClose]);
 
-  if (!isVisible) return null;
+  if (!isVisible) return (
+    <Box
+      ref={elementRef}
+      {...inputSubtitleStyles.container}
+      {...inputSubtitleStyles.draggableContainer(isDragging)}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <Button onClick={handleOpen}>reopen</Button>
+    </Box>
+  );
 
   return (
     <Box
