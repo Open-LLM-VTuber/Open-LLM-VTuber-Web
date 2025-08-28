@@ -84,7 +84,7 @@ export function useMediaCapture() {
         return null;
       }
 
-      ctx.drawImage(bitmap, 0, 0);
+      ctx.drawImage(bitmap, 0, 0, width, height);
       const quality = getCompressionQuality();
       return canvas.toDataURL('image/jpeg', quality);
     } catch (error) {
