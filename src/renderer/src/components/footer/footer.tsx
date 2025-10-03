@@ -35,6 +35,9 @@ interface MessageInputProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   onCompositionStart: () => void
   onCompositionEnd: () => void
+  onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
+  attachmentsCount: number
+  onClearAttachments: () => void
 }
 
 // Reusable components
@@ -81,6 +84,9 @@ const MessageInput = memo(({
   onKeyDown,
   onCompositionStart,
   onCompositionEnd,
+  onPaste,
+  attachmentsCount,
+  onClearAttachments,
 }: MessageInputProps) => {
   const { t } = useTranslation();
 
@@ -88,21 +94,26 @@ const MessageInput = memo(({
     <InputGroup flex={1}>
       <Box position="relative" width="100%">
         <IconButton
-          aria-label="Attach file"
+          aria-label="Clear attachments"
           variant="ghost"
           {...footerStyles.footer.attachButton}
+          onClick={onClearAttachments}
         >
+          {attachmentsCount > 0 && (<>
+            {attachmentsCount}
+          </>)}
           <BsPaperclip size="24" />
         </IconButton>
         <Textarea
           value={value}
           onChange={onChange}
           onKeyDown={onKeyDown}
+          onPaste={onPaste}
           onCompositionStart={onCompositionStart}
           onCompositionEnd={onCompositionEnd}
           placeholder={t('footer.typeYourMessage')}
           {...footerStyles.footer.input}
-        />
+        />      
       </Box>
     </InputGroup>
   );
@@ -118,6 +129,9 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
     handleKeyPress,
     handleCompositionStart,
     handleCompositionEnd,
+    handlePaste,
+    attachmentsCount,
+    clearAttachments,
     handleInterrupt,
     handleMicToggle,
     micOn,
@@ -146,6 +160,9 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
             onKeyDown={handleKeyPress}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
+            onPaste={handlePaste}
+            attachmentsCount={attachmentsCount}
+            onClearAttachments={clearAttachments}
           />
         </HStack>
       </Box>

@@ -4,11 +4,15 @@ import { useAiState } from '@/context/ai-state-context';
 import { useInterrupt } from '@/components/canvas/live2d';
 import { useChatHistory } from '@/context/chat-history-context';
 import { useVAD } from '@/context/vad-context';
-import { useMediaCapture } from '@/hooks/utils/use-media-capture';
+import { ImageData, useMediaCapture } from '@/hooks/utils/use-media-capture';
 
 export function useTextInput() {
   const [inputText, setInputText] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<ImageData[]>([]);
+  const clearAttachments = () => setAttachedImages([]);
+
+
   const wsContext = useWebSocket();
   const { aiState } = useAiState();
   const { interrupt } = useInterrupt();
@@ -20,13 +24,46 @@ export function useTextInput() {
     setInputText(e.target.value);
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { items } = e.clipboardData;
+    let foundImage = false;
+
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          foundImage = true;
+          const reader = new FileReader();
+          reader.onload = () => {
+            setAttachedImages(prev => [
+              ...prev,
+              {
+                source: 'clipboard',
+                data: reader.result as string,
+                mime_type: file.type,
+              },
+            ]);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+    // Prevent the raw image from being inserted as text
+    if (foundImage) e.preventDefault();
+  };
+
   const handleSend = async () => {
-    if (!inputText.trim() || !wsContext) return;
+    if (!inputText.trim() && attachedImages.length === 0) return;
+    if (!wsContext) return;
+
     if (aiState === 'thinking-speaking') {
       interrupt();
     }
 
-    const images = await captureAllMedia();
+    const captured = await captureAllMedia();
+    const images = [...attachedImages, ...captured];
+
 
     appendHumanMessage(inputText.trim());
     wsContext.sendMessage({
@@ -37,6 +74,7 @@ export function useTextInput() {
 
     if (autoStopMic) stopMic();
     setInputText('');
+    setAttachedImages([]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -58,5 +96,8 @@ export function useTextInput() {
     handleKeyPress,
     handleCompositionStart,
     handleCompositionEnd,
+    handlePaste,
+    attachmentsCount: attachedImages.length,
+    clearAttachments,
   };
 }
