@@ -86,6 +86,9 @@ interface InputFieldProps {
   onChange: (value: string) => void
   placeholder?: string
   help?: string
+  error?: string
+  disabled?: boolean
+  type?: string
 }
 
 // Reusable Components
@@ -187,6 +190,9 @@ export function InputField({
   onChange,
   placeholder,
   help,
+  error,
+  disabled = false,
+  type = 'text',
 }: InputFieldProps): JSX.Element {
   return (
     <Field
@@ -197,12 +203,15 @@ export function InputField({
           {help && <HelpIcon content={help} />}
         </Flex>
       }
+      errorText={error}
     >
       <Input
         {...settingStyles.general.input}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        type={type}
+        disabled={disabled}
       />
     </Field>
   );

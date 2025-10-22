@@ -66,6 +66,12 @@ const api = {
   updateConfigFiles: (files: ConfigFile[]) => {
     ipcRenderer.send('update-config-files', files);
   },
+  updateBackendAuth: (config: {
+    baseUrl: string
+    basicAuth: { enabled: boolean; username: string; password: string }
+  }) => {
+    ipcRenderer.send('update-backend-auth', config);
+  },
 };
 
 if (process.contextIsolated) {

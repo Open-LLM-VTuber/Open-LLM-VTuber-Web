@@ -1,5 +1,5 @@
 /* eslint-disable no-shadow */
-import { app, ipcMain, globalShortcut, desktopCapturer } from "electron";
+import { app, ipcMain, globalShortcut, desktopCapturer, session } from "electron";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { WindowManager } from "./window-manager";
 import { MenuManager } from "./menu-manager";
@@ -7,6 +7,57 @@ import { MenuManager } from "./menu-manager";
 let windowManager: WindowManager;
 let menuManager: MenuManager;
 let isQuitting = false;
+
+interface BackendAuthPayload {
+  baseUrl: string;
+  basicAuth: {
+    enabled: boolean;
+    username: string;
+    password: string;
+  };
+}
+
+interface BackendAuthState {
+  hostname: string;
+  port: string;
+  header?: string;
+}
+
+const getDefaultPort = (protocol: string) => (protocol === 'https:' || protocol === 'wss:' ? '443' : '80');
+
+let backendAuthState: BackendAuthState | null = null;
+
+const matchesBackend = (targetUrl: string) => {
+  if (!backendAuthState) return false;
+  try {
+    const parsed = new URL(targetUrl);
+    const port = parsed.port || getDefaultPort(parsed.protocol);
+    return parsed.hostname === backendAuthState.hostname && port === backendAuthState.port;
+  } catch (error) {
+    return false;
+  }
+};
+
+const updateBackendAuthState = (payload: BackendAuthPayload) => {
+  if (!payload?.baseUrl) {
+    backendAuthState = null;
+    return;
+  }
+
+  try {
+    const parsed = new URL(payload.baseUrl);
+    const port = parsed.port || getDefaultPort(parsed.protocol);
+    backendAuthState = {
+      hostname: parsed.hostname,
+      port,
+      header: payload.basicAuth?.enabled
+        ? `Basic ${Buffer.from(`${payload.basicAuth.username}:${payload.basicAuth.password}`, 'utf-8').toString('base64')}`
+        : undefined,
+    };
+  } catch (error) {
+    backendAuthState = null;
+  }
+};
 
 function setupIPC(): void {
   ipcMain.handle("get-platform", () => process.platform);
@@ -71,6 +122,32 @@ function setupIPC(): void {
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     return sources[0].id;
   });
+
+  ipcMain.on('update-backend-auth', (_event, payload: BackendAuthPayload) => {
+    updateBackendAuthState(payload);
+  });
+}
+
+function setupBackendAuthInterceptor(): void {
+  const defaultSession = session?.defaultSession;
+  if (!defaultSession) {
+    return;
+  }
+
+  defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    if (backendAuthState && matchesBackend(details.url)) {
+      const requestHeaders = { ...details.requestHeaders };
+      if (backendAuthState.header) {
+        requestHeaders.Authorization = backendAuthState.header;
+      } else {
+        delete requestHeaders.Authorization;
+      }
+      callback({ requestHeaders });
+      return;
+    }
+
+    callback({ requestHeaders: details.requestHeaders });
+  });
 }
 
 app.whenReady().then(() => {
@@ -110,6 +187,7 @@ app.whenReady().then(() => {
   // }
 
   setupIPC();
+  setupBackendAuthInterceptor();
 
   app.on("activate", () => {
     const window = windowManager.getWindow();

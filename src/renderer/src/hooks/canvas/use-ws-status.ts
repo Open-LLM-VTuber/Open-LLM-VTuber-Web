@@ -33,6 +33,13 @@ export const useWSStatus = () => {
           isDisconnected: false,
           handleClick,
         };
+      case 'UNAUTHORIZED':
+        return {
+          color: 'red.500',
+          textKey: 'wsStatus.authFailed',
+          isDisconnected: true,
+          handleClick,
+        };
       default:
         return {
           color: 'red.500',

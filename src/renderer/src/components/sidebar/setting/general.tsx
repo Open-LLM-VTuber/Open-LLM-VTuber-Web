@@ -9,7 +9,7 @@ import { useWebSocket } from "@/context/websocket-context";
 import { SelectField, SwitchField, InputField } from "./common";
 
 interface GeneralProps {
-  onSave?: (callback: () => void) => () => void;
+  onSave?: (callback: () => boolean | void) => () => void;
   onCancel?: (callback: () => void) => () => void;
 }
 
@@ -26,11 +26,37 @@ const useCollections = () => {
   });
 
   const backgrounds = createListCollection({
-    items:
-      backgroundFiles?.map((filename) => ({
-        label: String(filename),
-        value: `/bg/${filename}`,
-      })) || [],
+    items: (backgroundFiles ?? [])
+      .map((raw) => {
+        const entry = raw as unknown as { name?: string; url?: string } | string | null | undefined;
+        if (entry == null) {
+          return null;
+        }
+        if (typeof entry === 'string') {
+          const trimmed = entry.trim();
+          if (!trimmed) {
+            return null;
+          }
+          const label = trimmed.split('/').filter(Boolean).pop() ?? trimmed;
+          return {
+            label: label || trimmed,
+            value: trimmed,
+          };
+        }
+        const name = entry.name?.trim();
+        const url = entry.url?.trim();
+        const fallbackValue = name || url || '';
+        if (!fallbackValue) {
+          return null;
+        }
+        const labelSource = name || url;
+        const label = labelSource?.split('/').filter(Boolean).pop() ?? labelSource;
+        return {
+          label: label || fallbackValue,
+          value: name || fallbackValue,
+        };
+      })
+      .filter((item): item is { label: string; value: string } => Boolean(item?.value)),
   });
 
   const characterPresets = createListCollection({
@@ -51,7 +77,18 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
   const { t, i18n } = useTranslation();
   const bgUrlContext = useBgUrl();
   const { confName, setConfName } = useConfig();
-  const { wsUrl, setWsUrl, baseUrl, setBaseUrl } = useWebSocket();
+  const {
+    wsUrl,
+    setWsUrl,
+    baseUrl,
+    setBaseUrl,
+    basicAuthEnabled,
+    setBasicAuthEnabled,
+    basicAuthUsername,
+    setBasicAuthUsername,
+    basicAuthPassword,
+    setBasicAuthPassword,
+  } = useWebSocket();
   const collections = useCollections();
 
   const {
@@ -61,6 +98,7 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
     handleCharacterPresetChange,
     showSubtitle,
     setShowSubtitle,
+    basicAuthErrors,
   } = useGeneralSettings({
     bgUrlContext,
     confName,
@@ -71,6 +109,12 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
     onBaseUrlChange: setBaseUrl,
     onSave,
     onCancel,
+    basicAuthEnabled,
+    basicAuthUsername,
+    basicAuthPassword,
+    onBasicAuthEnabledChange: setBasicAuthEnabled,
+    onBasicAuthUsernameChange: setBasicAuthUsername,
+    onBasicAuthPasswordChange: setBasicAuthPassword,
   });
 
   if (settings.language[0] !== i18n.language) {
@@ -138,6 +182,31 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
         value={settings.baseUrl}
         onChange={(value) => handleSettingChange("baseUrl", value)}
         placeholder="Enter Base URL"
+      />
+
+      <SwitchField
+        label={t("settings.general.basicAuthEnabled")}
+        checked={settings.basicAuthEnabled}
+        onChange={(checked) => handleSettingChange("basicAuthEnabled", checked)}
+      />
+
+      <InputField
+        label={t("settings.general.basicAuthUsername")}
+        value={settings.basicAuthUsername}
+        onChange={(value) => handleSettingChange("basicAuthUsername", value)}
+        placeholder={t("settings.general.basicAuthUsernamePlaceholder")}
+        disabled={!settings.basicAuthEnabled}
+        error={settings.basicAuthEnabled ? basicAuthErrors.username : undefined}
+      />
+
+      <InputField
+        label={t("settings.general.basicAuthPassword")}
+        value={settings.basicAuthPassword}
+        onChange={(value) => handleSettingChange("basicAuthPassword", value)}
+        placeholder={t("settings.general.basicAuthPasswordPlaceholder")}
+        disabled={!settings.basicAuthEnabled}
+        error={settings.basicAuthEnabled ? basicAuthErrors.password : undefined}
+        type="password"
       />
 
       <InputField

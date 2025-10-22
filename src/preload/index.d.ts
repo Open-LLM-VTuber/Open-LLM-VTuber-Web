@@ -18,6 +18,10 @@ declare global {
       setMode: (mode: 'window' | 'pet') => void
       getConfigFiles: () => Promise<any>
       updateConfigFiles: (files: any[]) => void
+      updateBackendAuth: (config: {
+        baseUrl: string
+        basicAuth: { enabled: boolean; username: string; password: string }
+      }) => void
     }
   }
 }

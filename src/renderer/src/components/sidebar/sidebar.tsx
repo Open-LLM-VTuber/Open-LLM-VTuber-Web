@@ -3,7 +3,7 @@ import { Box, Button, Menu } from '@chakra-ui/react';
 import {
   FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers
 } from 'react-icons/fi';
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { sidebarStyles } from './sidebar-styles';
 import SettingUI from './setting/setting-ui';
 import ChatHistoryPanel from './chat-history-panel';
@@ -12,6 +12,7 @@ import HistoryDrawer from './history-drawer';
 import { useSidebar } from '@/hooks/sidebar/use-sidebar';
 import GroupDrawer from './group-drawer';
 import { ModeType } from '@/context/mode-context';
+import { OPEN_SETTINGS_EVENT } from '@/constants/events';
 
 // Type definitions
 interface SidebarProps {
@@ -145,6 +146,17 @@ function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
     currentMode,
     isElectron,
   } = useSidebar();
+
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      onSettingsOpen();
+    };
+
+    window.addEventListener(OPEN_SETTINGS_EVENT, handleOpenSettings);
+    return () => {
+      window.removeEventListener(OPEN_SETTINGS_EVENT, handleOpenSettings);
+    };
+  }, [onSettingsOpen]);
 
   return (
     <Box {...sidebarStyles.sidebar.container(isCollapsed)}>

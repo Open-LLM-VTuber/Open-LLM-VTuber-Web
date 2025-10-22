@@ -1,10 +1,22 @@
 /* eslint-disable react/jsx-no-constructed-context-values */
-import React, { useContext, useCallback } from 'react';
-import { wsService } from '@/services/websocket-service';
+import React, { useContext, useCallback, useEffect } from 'react';
+import { wsService, type WebSocketConnectionState } from '@/services/websocket-service';
 import { useLocalStorage } from '@/hooks/utils/use-local-storage';
+import {
+  DEFAULT_BACKEND_WS_URL,
+  DEFAULT_BACKEND_BASE_URL,
+  DEFAULT_BASIC_AUTH_USERNAME,
+  DEFAULT_BASIC_AUTH_PASSWORD,
+} from '@/constants/backend';
+import { deriveWsUrl, normalizeHttpOrigin, updateBackendConfig } from '@/services/backend-settings';
 
-const DEFAULT_WS_URL = 'ws://127.0.0.1:12393/client-ws';
-const DEFAULT_BASE_URL = 'http://127.0.0.1:12393';
+const DEFAULT_WS_URL = DEFAULT_BACKEND_WS_URL;
+const DEFAULT_BASE_URL = DEFAULT_BACKEND_BASE_URL;
+const DEFAULT_BASIC_AUTH = {
+  enabled: false,
+  username: DEFAULT_BASIC_AUTH_USERNAME,
+  password: DEFAULT_BASIC_AUTH_PASSWORD,
+};
 
 export interface HistoryInfo {
   uid: string;
@@ -18,22 +30,34 @@ export interface HistoryInfo {
 
 interface WebSocketContextProps {
   sendMessage: (message: object) => void;
-  wsState: string;
+  wsState: WebSocketConnectionState;
   reconnect: () => void;
   wsUrl: string;
   setWsUrl: (url: string) => void;
   baseUrl: string;
   setBaseUrl: (url: string) => void;
+  basicAuthEnabled: boolean;
+  setBasicAuthEnabled: (enabled: boolean) => void;
+  basicAuthUsername: string;
+  setBasicAuthUsername: (username: string) => void;
+  basicAuthPassword: string;
+  setBasicAuthPassword: (password: string) => void;
 }
 
 export const WebSocketContext = React.createContext<WebSocketContextProps>({
   sendMessage: wsService.sendMessage.bind(wsService),
   wsState: 'CLOSED',
-  reconnect: () => wsService.connect(DEFAULT_WS_URL),
+  reconnect: () => wsService.reconnect(),
   wsUrl: DEFAULT_WS_URL,
   setWsUrl: () => {},
   baseUrl: DEFAULT_BASE_URL,
   setBaseUrl: () => {},
+  basicAuthEnabled: DEFAULT_BASIC_AUTH.enabled,
+  setBasicAuthEnabled: () => {},
+  basicAuthUsername: DEFAULT_BASIC_AUTH.username,
+  setBasicAuthUsername: () => {},
+  basicAuthPassword: DEFAULT_BASIC_AUTH.password,
+  setBasicAuthPassword: () => {},
 });
 
 export function useWebSocket() {
@@ -50,19 +74,72 @@ export const defaultBaseUrl = DEFAULT_BASE_URL;
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [wsUrl, setWsUrl] = useLocalStorage('wsUrl', DEFAULT_WS_URL);
   const [baseUrl, setBaseUrl] = useLocalStorage('baseUrl', DEFAULT_BASE_URL);
+  const [basicAuthEnabled, setBasicAuthEnabled] = useLocalStorage('basicAuthEnabled', DEFAULT_BASIC_AUTH.enabled);
+  const [basicAuthUsername, setBasicAuthUsername] = useLocalStorage('basicAuthUsername', DEFAULT_BASIC_AUTH.username);
+  const [basicAuthPassword, setBasicAuthPassword] = useLocalStorage('basicAuthPassword', DEFAULT_BASIC_AUTH.password);
   const handleSetWsUrl = useCallback((url: string) => {
     setWsUrl(url);
-    wsService.connect(url);
   }, [setWsUrl]);
+
+  useEffect(() => {
+    const normalizedBase = normalizeHttpOrigin(baseUrl);
+    if (normalizedBase !== baseUrl) {
+      setBaseUrl(normalizedBase);
+      return;
+    }
+
+    const authConfig = {
+      enabled: basicAuthEnabled,
+      username: basicAuthUsername,
+      password: basicAuthPassword,
+    };
+    updateBackendConfig({
+      baseUrl: normalizedBase,
+      wsUrl,
+      basicAuth: authConfig,
+    });
+    const targetUrl = deriveWsUrl(normalizedBase, wsUrl);
+    wsService.connect(targetUrl, { basicAuth: authConfig });
+  }, [
+    baseUrl,
+    setBaseUrl,
+    wsUrl,
+    basicAuthEnabled,
+    basicAuthUsername,
+    basicAuthPassword,
+  ]);
 
   const value = {
     sendMessage: wsService.sendMessage.bind(wsService),
     wsState: 'CLOSED',
-    reconnect: () => wsService.connect(wsUrl),
+    reconnect: () => {
+      const normalizedBase = normalizeHttpOrigin(baseUrl);
+      if (normalizedBase !== baseUrl) {
+        setBaseUrl(normalizedBase);
+        return;
+      }
+      const authConfig = {
+        enabled: basicAuthEnabled,
+        username: basicAuthUsername,
+        password: basicAuthPassword,
+      };
+      updateBackendConfig({
+        baseUrl: normalizedBase,
+        wsUrl,
+        basicAuth: authConfig,
+      });
+      wsService.reconnect();
+    },
     wsUrl,
     setWsUrl: handleSetWsUrl,
     baseUrl,
     setBaseUrl,
+    basicAuthEnabled,
+    setBasicAuthEnabled,
+    basicAuthUsername,
+    setBasicAuthUsername,
+    basicAuthPassword,
+    setBasicAuthPassword,
   };
 
   return (

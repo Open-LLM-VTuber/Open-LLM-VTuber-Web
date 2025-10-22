@@ -1,136 +1,137 @@
-{
+﻿{
   "common": {
-    "save": "保存",
-    "cancel": "取消",
-    "settings": "设置",
-    "close": "关闭",
-    "accept": "接受"
+    "save": "Σ┐¥σ¡ÿ",
+    "cancel": "σÅûµ╢ê",
+    "settings": "Φ«╛τ╜«",
+    "close": "σà│Θù¡",
+    "accept": "µÄÑσÅù"
   },
   "settings": {
     "tabs": {
-      "general": "常规",
+      "general": "σ╕╕Φºä",
       "live2d": "Live2D",
-      "asr": "识别",
-      "tts": "合成",
-      "agent": "代理",
-      "about": "关于"
+      "asr": "Φ»åσê½",
+      "tts": "σÉêµêÉ",
+      "agent": "Σ╗úτÉå",
+      "about": "σà│Σ║Ä"
     },
     "general": {
-      "language": "语言",
-      "useCameraBackground": "使用摄像头背景",
-      "showSubtitle": "显示字幕",
-      "backgroundImage": "背景图片",
-      "customBgUrlPlaceholder": "输入图片URL",
-      "customBgUrl": "或输入自定义背景URL",
-      "characterPreset": "角色预设",
-      "wsUrl": "WebSocket地址",
-      "baseUrl": "基础URL",
-      "imageCompressionQuality": "图片压缩质量",
-      "imageCompressionQualityHelp": "JPEG压缩质量(0.1-1.0)。默认为0.8以减小文件体积，因为我们在向AI模型传输图片时没有进行压缩，可能导致文件过大。",
-      "imageMaxWidth": "图片最大宽度",
-      "imageMaxWidthHelp": "图片缩放的最大宽度。超过此宽度的图片会按比例缩小。设为0表示不限制大小。此功能存在的原因是某些AI模型在处理超大尺寸图片时可能存在限制。但是大部分AI模型都能自动处理图片，因此默认值为0（不限制），以保持您原始图片的完整性。"
+      "language": "Φ»¡Φ¿Ç",
+      "useCameraBackground": "Σ╜┐τö¿µæäσâÅσñ┤ΦâîµÖ»",
+      "showSubtitle": "µÿ╛τñ║σ¡ùσ╣ò",
+      "backgroundImage": "ΦâîµÖ»σ¢╛τëç",
+      "customBgUrlPlaceholder": "Φ╛ôσàÑσ¢╛τëçURL",
+      "customBgUrl": "µêûΦ╛ôσàÑΦç¬σ«ÜΣ╣ëΦâîµÖ»URL",
+      "characterPreset": "ΦºÆΦë▓ΘóäΦ«╛",
+      "wsUrl": "WebSocketσ£░σ¥Ç",
+      "baseUrl": "σƒ║τíÇURL",
+      "imageCompressionQuality": "σ¢╛τëçσÄïτ╝⌐Φ┤¿ΘçÅ",
+      "imageCompressionQualityHelp": "JPEGσÄïτ╝⌐Φ┤¿ΘçÅ(0.1-1.0)πÇéΘ╗ÿΦ«ñΣ╕║0.8Σ╗ÑσçÅσ░ÅµûçΣ╗╢Σ╜ôτº»∩╝îσ¢áΣ╕║µêæΣ╗¼σ£¿σÉæAIµ¿íσ₧ïΣ╝áΦ╛ôσ¢╛τëçµù╢µ▓íµ£ëΦ┐¢ΦíîσÄïτ╝⌐∩╝îσÅ»Φâ╜σ»╝Φç┤µûçΣ╗╢Φ┐çσñºπÇé",
+      "imageMaxWidth": "σ¢╛τëçµ£Çσñºσ«╜σ║ª",
+      "imageMaxWidthHelp": "σ¢╛τëçτ╝⌐µö╛τÜäµ£Çσñºσ«╜σ║ªπÇéΦ╢àΦ┐çµ¡ñσ«╜σ║ªτÜäσ¢╛τëçΣ╝Üµîëµ»öΣ╛ïτ╝⌐σ░ÅπÇéΦ«╛Σ╕║0Φí¿τñ║Σ╕ìΘÖÉσê╢σñºσ░ÅπÇéµ¡ñσèƒΦâ╜σ¡ÿσ£¿τÜäσÄƒσ¢áµÿ»µƒÉΣ║¢AIµ¿íσ₧ïσ£¿σñäτÉåΦ╢àσñºσ░║σ»╕σ¢╛τëçµù╢σÅ»Φâ╜σ¡ÿσ£¿ΘÖÉσê╢πÇéΣ╜åµÿ»σñºΘâ¿σêåAIµ¿íσ₧ïΘâ╜Φâ╜Φç¬σè¿σñäτÉåσ¢╛τëç∩╝îσ¢áµ¡ñΘ╗ÿΦ«ñσÇ╝Σ╕║0∩╝êΣ╕ìΘÖÉσê╢∩╝ë∩╝îΣ╗ÑΣ┐¥µîüµé¿σÄƒσºïσ¢╛τëçτÜäσ«îµò┤µÇºπÇé"
     },
     "live2d": {
-      "pointerInteractive": "鼠标交互",
-      "scrollToResize": "启用滚轮缩放"
+      "pointerInteractive": "Θ╝áµáçΣ║ñΣ║Æ",
+      "scrollToResize": "σÉ»τö¿µ╗ÜΦ╜«τ╝⌐µö╛"
     },
     "asr": {
-      "autoStopMic": "AI开始说话时自动关闭麦克风",
-      "autoStopMicDesc": "当AI开始说话时自动关闭麦克风，防止音频反馈",
-      "autoStartMicOnConvEnd": "对话结束时自动开启麦克风",
-      "autoStartMicOnConvEndDesc": "AI说话结束时自动重新开启麦克风，实现无缝对话",
-      "autoStartMicOn": "AI被打断时自动开启麦克风",
-      "autoStartMicOnDesc": "当您打断AI时自动重新开启麦克风，保持连续交互",
-      "positiveSpeechThreshold": "语音识别阈值",
-      "positiveSpeechThresholdDesc": "检测语音所需的最低置信度(1-100)，数值越高越能减少误检测",
-      "negativeSpeechThreshold": "负面语音阈值",
-      "negativeSpeechThresholdDesc": "停止语音检测的置信度下限(0-100)，数值越低检测越不敏感",
-      "redemptionFrames": "验证帧数",
-      "redemptionFramesDesc": "确认语音检测所需的连续帧数(1-100)，数值越高越能减少噪音触发"
+      "autoStopMic": "AIσ╝ÇσºïΦ»┤Φ»¥µù╢Φç¬σè¿σà│Θù¡Θ║ªσàïΘúÄ",
+      "autoStopMicDesc": "σ╜ôAIσ╝ÇσºïΦ»┤Φ»¥µù╢Φç¬σè¿σà│Θù¡Θ║ªσàïΘúÄ∩╝îΘÿ▓µ¡óΘƒ│ΘóæσÅìΘªê",
+      "autoStartMicOnConvEnd": "σ»╣Φ»¥τ╗ôµ¥ƒµù╢Φç¬σè¿σ╝ÇσÉ»Θ║ªσàïΘúÄ",
+      "autoStartMicOnConvEndDesc": "AIΦ»┤Φ»¥τ╗ôµ¥ƒµù╢Φç¬σè¿Θçìµû░σ╝ÇσÉ»Θ║ªσàïΘúÄ∩╝îσ«₧τÄ░µùáτ╝¥σ»╣Φ»¥",
+      "autoStartMicOn": "AIΦó½µëôµû¡µù╢Φç¬σè¿σ╝ÇσÉ»Θ║ªσàïΘúÄ",
+      "autoStartMicOnDesc": "σ╜ôµé¿µëôµû¡AIµù╢Φç¬σè¿Θçìµû░σ╝ÇσÉ»Θ║ªσàïΘúÄ∩╝îΣ┐¥µîüΦ┐₧τ╗¡Σ║ñΣ║Æ",
+      "positiveSpeechThreshold": "Φ»¡Θƒ│Φ»åσê½ΘÿêσÇ╝",
+      "positiveSpeechThresholdDesc": "µúÇµ╡ïΦ»¡Θƒ│µëÇΘ£ÇτÜäµ£ÇΣ╜Äτ╜«Σ┐íσ║ª(1-100)∩╝îµò░σÇ╝Φ╢èΘ½ÿΦ╢èΦâ╜σçÅσ░æΦ»»µúÇµ╡ï",
+      "negativeSpeechThreshold": "Φ┤ƒΘ¥óΦ»¡Θƒ│ΘÿêσÇ╝",
+      "negativeSpeechThresholdDesc": "σü£µ¡óΦ»¡Θƒ│µúÇµ╡ïτÜäτ╜«Σ┐íσ║ªΣ╕ïΘÖÉ(0-100)∩╝îµò░σÇ╝Φ╢èΣ╜ÄµúÇµ╡ïΦ╢èΣ╕ìµòÅµäƒ",
+      "redemptionFrames": "Θ¬îΦ»üσ╕ºµò░",
+      "redemptionFramesDesc": "τí«Φ«ñΦ»¡Θƒ│µúÇµ╡ïµëÇΘ£ÇτÜäΦ┐₧τ╗¡σ╕ºµò░(1-100)∩╝îµò░σÇ╝Φ╢èΘ½ÿΦ╢èΦâ╜σçÅσ░æσÖ¬Θƒ│ΦºªσÅæ"
     },
     "agent": {
-      "allowProactiveSpeak": "允许AI主动发言",
-      "idleSecondsToSpeak": "空闲多少秒后AI可发言",
-      "allowButtonTrigger": "通过举手按钮提示AI发言"
+      "allowProactiveSpeak": "σàüΦ«╕AIΣ╕╗σè¿σÅæΦ¿Ç",
+      "idleSecondsToSpeak": "τ⌐║Θù▓σñÜσ░æτºÆσÉÄAIσÅ»σÅæΦ¿Ç",
+      "allowButtonTrigger": "ΘÇÜΦ┐çΣ╕╛µëïµîëΘÆ«µÅÉτñ║AIσÅæΦ¿Ç"
     },
     "about": {
-      "title": "Open LLM VTuber 前端",
-      "version": "版本",
-      "projectLinks": "项目链接",
+      "title": "Open LLM VTuber σëìτ½»",
+      "version": "τëêµ£¼",
+      "projectLinks": "Θí╣τ¢«Θô╛µÄÑ",
       "github": "GitHub",
-      "documentation": "文档",
-      "copyright": "版权",
-      "viewLicense": "查看许可证"
+      "documentation": "µûçµíú",
+      "copyright": "τëêµ¥â",
+      "viewLicense": "µƒÑτ£ïΦ«╕σÅ»Φ»ü"
     }
   },
   "footer": {
-    "typeYourMessage": "输入您的消息...",
-    "cameraControl": "点击启动摄像头",
-    "cameraStopping": "点击停止摄像头",
-    "screenControl": "点击开始屏幕共享",
-    "screenStopping": "点击停止屏幕共享"
+    "typeYourMessage": "Φ╛ôσàÑµé¿τÜäµ╢êµü»...",
+    "cameraControl": "τé╣σç╗σÉ»σè¿µæäσâÅσñ┤",
+    "cameraStopping": "τé╣σç╗σü£µ¡óµæäσâÅσñ┤",
+    "screenControl": "τé╣σç╗σ╝Çσºïσ▒Åσ╣òσà▒Σ║½",
+    "screenStopping": "τé╣σç╗σü£µ¡óσ▒Åσ╣òσà▒Σ║½"
   },
   "sidebar": {
-    "camera": "摄像头",
-    "screen": "屏幕",
-    "browser": "浏览器",
-    "live": "直播",
-    "noMessages": "暂无消息。开始对话吧！",
-    "noBrowserSession": "无活跃浏览器会话",
-    "browserSession": "浏览器会话"
+    "camera": "µæäσâÅσñ┤",
+    "screen": "σ▒Åσ╣ò",
+    "browser": "µ╡ÅΦºêσÖ¿",
+    "live": "τ¢┤µÆ¡",
+    "noMessages": "µÜéµùáµ╢êµü»πÇéσ╝Çσºïσ»╣Φ»¥σÉº∩╝ü",
+    "noBrowserSession": "µùáµ┤╗Φ╖âµ╡ÅΦºêσÖ¿Σ╝ÜΦ»¥",
+    "browserSession": "µ╡ÅΦºêσÖ¿Σ╝ÜΦ»¥"
   },
   "group": {
-    "management": "群组管理",
-    "yourUuid": "您的UUID",
-    "inviteMember": "邀请成员",
-    "enterMemberUuid": "输入成员UUID",
-    "invite": "邀请",
-    "members": "成员",
-    "you": "您",
-    "leaveGroup": "离开群组",
-    "removeMember": "移除成员",
-    "leave": "离开"
+    "management": "τ╛ñτ╗äτ«íτÉå",
+    "yourUuid": "µé¿τÜäUUID",
+    "inviteMember": "ΘéÇΦ»╖µêÉσæÿ",
+    "enterMemberUuid": "Φ╛ôσàÑµêÉσæÿUUID",
+    "invite": "ΘéÇΦ»╖",
+    "members": "µêÉσæÿ",
+    "you": "µé¿",
+    "leaveGroup": "τª╗σ╝Çτ╛ñτ╗ä",
+    "removeMember": "τº╗ΘÖñµêÉσæÿ",
+    "leave": "τª╗σ╝Ç"
   },
   "history": {
-    "chatHistoryList": "聊天历史列表",
-    "noMessages": "暂无消息"
+    "chatHistoryList": "Φüèσñ⌐σÄåσÅ▓σêùΦí¿",
+    "noMessages": "µÜéµùáµ╢êµü»"
   },
   "notification": {
-    "characterLoaded": "新角色已加载",
-    "characterSwitched": "角色已切换",
-    "historyLoaded": "历史记录已加载",
-    "newConversation": "新对话已开始",
-    "newChatHistory": "新聊天历史已创建",
-    "historyDeleteSuccess": "历史记录删除成功",
-    "historyDeleteFail": "删除历史记录失败"
+    "characterLoaded": "µû░ΦºÆΦë▓σ╖▓σèáΦ╜╜",
+    "characterSwitched": "ΦºÆΦë▓σ╖▓σêçµìó",
+    "historyLoaded": "σÄåσÅ▓Φ«░σ╜òσ╖▓σèáΦ╜╜",
+    "newConversation": "µû░σ»╣Φ»¥σ╖▓σ╝Çσºï",
+    "newChatHistory": "µû░Φüèσñ⌐σÄåσÅ▓σ╖▓σê¢σ╗║",
+    "historyDeleteSuccess": "σÄåσÅ▓Φ«░σ╜òσêáΘÖñµêÉσèƒ",
+    "historyDeleteFail": "σêáΘÖñσÄåσÅ▓Φ«░σ╜òσñ▒Φ┤Ñ"
   },
   "error": {
-    "cameraApiNotSupported": "此设备不支持摄像头API",
-    "noCameraFound": "未找到摄像头设备",
-    "failedStartCamera": "启动摄像头失败",
-    "failedStartBackgroundCamera": "启动背景摄像头失败",
-    "failedStartScreenCapture": "启动屏幕捕获失败",
-    "failedStartVAD": "启动语音活动检测失败",
-    "llmCantHear": "AI无法听到您的声音",
-    "audioPlayback": "音频播放错误",
-    "enterValidUuid": "请输入有效的UUID",
-    "cannotDeleteCurrentHistory": "无法删除当前聊天记录",
-    "failedCapture": "捕获{{source}}帧失败",
-    "failedParseWebSocket": "解析WebSocket消息失败",
-    "websocketNotOpen": "WebSocket未连接",
-    "vadMisfire": "检测到语音但过于简短，请尝试提高音量或说得更久一些，或调整识别设置（降低语音识别阈值、降低负面语音阈值、减少验证帧数）"
+    "cameraApiNotSupported": "µ¡ñΦ«╛σñçΣ╕ìµö»µîüµæäσâÅσñ┤API",
+    "noCameraFound": "µ£¬µë╛σê░µæäσâÅσñ┤Φ«╛σñç",
+    "failedStartCamera": "σÉ»σè¿µæäσâÅσñ┤σñ▒Φ┤Ñ",
+    "failedStartBackgroundCamera": "σÉ»σè¿ΦâîµÖ»µæäσâÅσñ┤σñ▒Φ┤Ñ",
+    "failedStartScreenCapture": "σÉ»σè¿σ▒Åσ╣òµìòΦÄ╖σñ▒Φ┤Ñ",
+    "failedStartVAD": "σÉ»σè¿Φ»¡Θƒ│µ┤╗σè¿µúÇµ╡ïσñ▒Φ┤Ñ",
+    "llmCantHear": "AIµùáµ│òσÉ¼σê░µé¿τÜäσú░Θƒ│",
+    "audioPlayback": "Θƒ│ΘóæµÆ¡µö╛ΘöÖΦ»»",
+    "enterValidUuid": "Φ»╖Φ╛ôσàÑµ£ëµòêτÜäUUID",
+    "cannotDeleteCurrentHistory": "µùáµ│òσêáΘÖñσ╜ôσëìΦüèσñ⌐Φ«░σ╜ò",
+    "failedCapture": "µìòΦÄ╖{{source}}σ╕ºσñ▒Φ┤Ñ",
+    "failedParseWebSocket": "Φºúµ₧ÉWebSocketµ╢êµü»σñ▒Φ┤Ñ",
+    "websocketNotOpen": "WebSocketµ£¬Φ┐₧µÄÑ",
+    "vadMisfire": "µúÇµ╡ïσê░Φ»¡Θƒ│Σ╜åΦ┐çΣ║Äτ«Çτƒ¡∩╝îΦ»╖σ░¥Φ»òµÅÉΘ½ÿΘƒ│ΘçÅµêûΦ»┤σ╛ùµ¢┤Σ╣àΣ╕ÇΣ║¢∩╝îµêûΦ░âµò┤Φ»åσê½Φ«╛τ╜«∩╝êΘÖìΣ╜ÄΦ»¡Θƒ│Φ»åσê½ΘÿêσÇ╝πÇüΘÖìΣ╜ÄΦ┤ƒΘ¥óΦ»¡Θƒ│ΘÿêσÇ╝πÇüσçÅσ░æΘ¬îΦ»üσ╕ºµò░∩╝ë"
   },
   "aiState": {
-    "idle": "空闲",
-    "thinking-speaking": "思考/说话中",
-    "interrupted": "已打断",
-    "loading": "加载中",
-    "listening": "聆听中",
-    "waiting": "等待中"
+    "idle": "τ⌐║Θù▓",
+    "thinking-speaking": "µÇ¥ΦÇâ/Φ»┤Φ»¥Σ╕¡",
+    "interrupted": "σ╖▓µëôµû¡",
+    "loading": "σèáΦ╜╜Σ╕¡",
+    "listening": "ΦüåσÉ¼Σ╕¡",
+    "waiting": "τ¡ëσ╛àΣ╕¡"
   },
   "wsStatus": {
-    "connected": "已连接",
-    "connecting": "连接中",
-    "clickToReconnect": "点击重新连接"
+    "connected": "σ╖▓Φ┐₧µÄÑ",
+    "connecting": "Φ┐₧µÄÑΣ╕¡",
+    "clickToReconnect": "τé╣σç╗Θçìµû░Φ┐₧µÄÑ",
+    "authFailed": "认证失败，点击重新连接"
   }
-} 
+}

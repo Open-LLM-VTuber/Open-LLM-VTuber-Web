@@ -1,6 +1,6 @@
 /* eslint-disable import/order */
 /* eslint-disable no-use-before-define */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BgUrlContextState } from '@/context/bgurl-context';
 import { defaultBaseUrl, defaultWsUrl } from '@/context/websocket-context';
 import { useSubtitle } from '@/context/subtitle-context';
@@ -26,6 +26,9 @@ interface GeneralSettings {
   showSubtitle: boolean
   imageCompressionQuality: number;
   imageMaxWidth: number;
+  basicAuthEnabled: boolean;
+  basicAuthUsername: string;
+  basicAuthPassword: string;
 }
 
 interface UseGeneralSettingsProps {
@@ -36,9 +39,212 @@ interface UseGeneralSettingsProps {
   wsUrl: string
   onWsUrlChange: (url: string) => void
   onBaseUrlChange: (url: string) => void
-  onSave?: (callback: () => void) => () => void
+  onSave?: (callback: () => boolean | void) => () => void
   onCancel?: (callback: () => void) => () => void
+  basicAuthEnabled: boolean
+  basicAuthUsername: string
+  basicAuthPassword: string
+  onBasicAuthEnabledChange: (enabled: boolean) => void
+  onBasicAuthUsernameChange: (username: string) => void
+  onBasicAuthPasswordChange: (password: string) => void
 }
+
+interface BasicAuthErrors {
+  username?: string;
+  password?: string;
+}
+
+const arraysShallowEqual = (a: string[], b: string[]) => (
+  a.length === b.length && a.every((value, index) => value === b[index])
+);
+
+const settingsEqual = (prev: GeneralSettings, next: GeneralSettings) => (
+  arraysShallowEqual(prev.language, next.language)
+  && prev.customBgUrl === next.customBgUrl
+  && arraysShallowEqual(prev.selectedBgUrl, next.selectedBgUrl)
+  && prev.backgroundUrl === next.backgroundUrl
+  && arraysShallowEqual(prev.selectedCharacterPreset, next.selectedCharacterPreset)
+  && prev.useCameraBackground === next.useCameraBackground
+  && prev.wsUrl === next.wsUrl
+  && prev.baseUrl === next.baseUrl
+  && prev.showSubtitle === next.showSubtitle
+  && prev.imageCompressionQuality === next.imageCompressionQuality
+  && prev.imageMaxWidth === next.imageMaxWidth
+  && prev.basicAuthEnabled === next.basicAuthEnabled
+  && prev.basicAuthUsername === next.basicAuthUsername
+  && prev.basicAuthPassword === next.basicAuthPassword
+);
+
+type BackgroundFile = BgUrlContextState['backgroundFiles'][number];
+
+type BackgroundEntry = BackgroundFile | string;
+
+const toBackgroundEntry = (value: BackgroundEntry | null | undefined): BackgroundEntry | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+  if (typeof value === 'object') {
+    return value;
+  }
+  return undefined;
+};
+
+const getEntryName = (entry: BackgroundEntry | undefined): string => {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  return entry.name?.trim() || '';
+};
+
+const getEntryUrl = (entry: BackgroundEntry | undefined): string => {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  return entry.url?.trim() || '';
+};
+
+const normalizeScheme = (value: string): string => {
+  if (!value) return value;
+  if (/^ws:\/\//i.test(value)) {
+    return value.replace(/^ws:\/\//i, 'http://');
+  }
+  if (/^wss:\/\//i.test(value)) {
+    return value.replace(/^wss:\/\//i, 'https://');
+  }
+  return value;
+};
+
+const ensureTrailingSlash = (value: string): string => (
+  value.endsWith('/') ? value : `${value}/`
+);
+
+const stripProtocolAndHost = (value: string): string => value.replace(/^https?:\/\/[^/]+/i, '');
+
+const stripLeadingSlashes = (value: string): string => value.replace(/^[/\\]+/, '');
+
+const stripBgPrefix = (value: string): string => value.replace(/^bg[/\\]/i, '');
+
+const computeBackgroundOptionValue = (entry: BackgroundEntry): string => {
+  const name = getEntryName(entry);
+  if (name) {
+    return name;
+  }
+  const url = getEntryUrl(entry);
+  if (!url) {
+    return '';
+  }
+  const filename = url.split('/').filter(Boolean).pop();
+  return filename || url;
+};
+
+const matchBackgroundFile = (
+  candidateRaw: string,
+  files?: BackgroundEntry[],
+): BackgroundEntry | undefined => {
+  const entries = files
+    ?.map((value) => toBackgroundEntry(value))
+    .filter((value): value is BackgroundEntry => Boolean(value));
+
+  if (!entries?.length) {
+    return undefined;
+  }
+  const candidate = candidateRaw.trim();
+  if (!candidate) {
+    return undefined;
+  }
+
+  const candidateWithoutHost = stripProtocolAndHost(candidate);
+  const candidateWithoutLeading = stripLeadingSlashes(candidateWithoutHost);
+  const candidateCore = stripBgPrefix(candidateWithoutLeading);
+
+  return entries.find((entry) => {
+    const sources = [getEntryUrl(entry), getEntryName(entry)].filter(Boolean);
+    if (!sources.length) {
+      return false;
+    }
+    return sources.some((source) => {
+      const trimmedSource = source.trim();
+      const sourceWithoutHost = stripProtocolAndHost(trimmedSource);
+      const sourceWithoutLeading = stripLeadingSlashes(sourceWithoutHost);
+      const sourceCore = stripBgPrefix(sourceWithoutLeading);
+
+      return candidate === trimmedSource
+        || candidateWithoutLeading === sourceWithoutLeading
+        || candidateCore === sourceCore;
+    });
+  });
+};
+
+const normalizeBackgroundResourcePath = (
+  value: string,
+  fallbackToBgDirectory: boolean,
+): string => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('bg/')) {
+    return `/${trimmed}`;
+  }
+  if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    return trimmed;
+  }
+  if (fallbackToBgDirectory) {
+    if (trimmed.includes('/')) {
+      return `/${trimmed}`;
+    }
+    return `/bg/${trimmed}`;
+  }
+  return trimmed;
+};
+
+const resolveBackgroundUrl = (
+  candidate: string | undefined,
+  baseUrl: string,
+  files?: BackgroundEntry[],
+  matchedFile?: BackgroundEntry,
+): string | undefined => {
+  const trimmedCandidate = candidate?.trim();
+  if (!trimmedCandidate) {
+    return undefined;
+  }
+  const normalizedBase = ensureTrailingSlash(normalizeScheme(baseUrl));
+  const entries = files
+    ?.map((value) => toBackgroundEntry(value))
+    .filter((value): value is BackgroundEntry => Boolean(value));
+  const file = matchedFile ?? matchBackgroundFile(trimmedCandidate, entries);
+  const rawSource = [
+    getEntryUrl(file),
+    getEntryName(file),
+    trimmedCandidate,
+  ].find((value) => Boolean(value && value.trim())) || trimmedCandidate;
+
+  const rawValue = normalizeScheme(rawSource);
+
+  if (/^https?:\/\//i.test(rawValue)) {
+    return rawValue;
+  }
+
+  const resourcePath = normalizeBackgroundResourcePath(rawValue, Boolean(file));
+  if (!resourcePath) {
+    return undefined;
+  }
+
+  try {
+    return new URL(resourcePath, normalizedBase).toString();
+  } catch (error) {
+    console.error('Failed to resolve background URL:', {
+      candidate: trimmedCandidate,
+      resourcePath,
+      baseUrl: normalizedBase,
+      error,
+    });
+    return resourcePath;
+  }
+};
 
 const loadInitialCompressionQuality = (): number => {
   const storedQuality = localStorage.getItem(IMAGE_COMPRESSION_QUALITY_KEY);
@@ -72,6 +278,12 @@ export const useGeneralSettings = ({
   onBaseUrlChange,
   onSave,
   onCancel,
+  basicAuthEnabled,
+  basicAuthUsername,
+  basicAuthPassword,
+  onBasicAuthEnabledChange,
+  onBasicAuthUsernameChange,
+  onBasicAuthPasswordChange,
 }: UseGeneralSettingsProps) => {
   const { showSubtitle, setShowSubtitle } = useSubtitle();
   const { setUseCameraBackground } = bgUrlContext || {};
@@ -81,9 +293,23 @@ export const useGeneralSettings = ({
 
   const getCurrentBgKey = (): string[] => {
     if (!bgUrlContext?.backgroundUrl) return [];
-    const currentBgUrl = bgUrlContext.backgroundUrl;
-    const path = currentBgUrl.replace(baseUrl, '');
-    return path.startsWith('/bg/') ? [path] : [];
+    const currentBgUrl = bgUrlContext.backgroundUrl.trim();
+    const entries = (bgUrlContext.backgroundFiles ?? []) as unknown as BackgroundEntry[];
+
+    if (entries.length > 0) {
+      const matched = entries.find((entry) => {
+        const source = typeof entry === 'string'
+          ? entry
+          : entry?.url ?? entry?.name ?? '';
+        const absolute = resolveBackgroundUrl(source, baseUrl, entries, entry);
+        return absolute === currentBgUrl;
+      });
+      if (matched) {
+        return [computeBackgroundOptionValue(matched)];
+      }
+    }
+
+    return [];
   };
 
   const getCurrentCharacterFilename = (): string[] => {
@@ -106,23 +332,63 @@ export const useGeneralSettings = ({
     showSubtitle,
     imageCompressionQuality: loadInitialCompressionQuality(),
     imageMaxWidth: loadInitialImageMaxWidth(),
+    basicAuthEnabled,
+    basicAuthUsername,
+    basicAuthPassword,
   };
 
   const [settings, setSettings] = useState<GeneralSettings>(initialSettings);
   const [originalSettings, setOriginalSettings] = useState<GeneralSettings>(initialSettings);
   const originalConfName = confName;
+  const [basicAuthErrors, setBasicAuthErrors] = useState<BasicAuthErrors>({});
+
+  const validateBasicAuth = useCallback((
+    enabled: boolean,
+    username: string,
+    password: string,
+  ): boolean => {
+    if (!enabled) {
+      setBasicAuthErrors({});
+      return true;
+    }
+
+    const errors: BasicAuthErrors = {};
+
+    if (!username.trim()) {
+      errors.username = i18n.t('settings.general.basicAuthUsernameRequired');
+    }
+
+    if (!password.trim()) {
+      errors.password = i18n.t('settings.general.basicAuthPasswordRequired');
+    }
+
+    setBasicAuthErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [setBasicAuthErrors, i18n.language]);
 
   useEffect(() => {
+    console.debug('[useGeneralSettings] settings effect triggered', settings);
     setShowSubtitle(settings.showSubtitle);
 
-    const newBgUrl = settings.customBgUrl || settings.selectedBgUrl[0];
-    if (newBgUrl && bgUrlContext) {
-      const fullUrl = newBgUrl.startsWith('http') ? newBgUrl : `${baseUrl}${newBgUrl}`;
-      bgUrlContext.setBackgroundUrl(fullUrl);
+    const newBgSelection = settings.customBgUrl || settings.selectedBgUrl[0];
+    if (bgUrlContext) {
+      const resolvedBackground = resolveBackgroundUrl(
+        newBgSelection,
+        baseUrl,
+        (bgUrlContext.backgroundFiles ?? []) as unknown as BackgroundEntry[],
+      );
+      if (resolvedBackground && resolvedBackground !== bgUrlContext.backgroundUrl) {
+        bgUrlContext.setBackgroundUrl(resolvedBackground);
+      }
     }
 
     onWsUrlChange(settings.wsUrl);
     onBaseUrlChange(settings.baseUrl);
+    validateBasicAuth(
+      settings.basicAuthEnabled,
+      settings.basicAuthUsername,
+      settings.basicAuthPassword,
+    );
 
     // Apply language change if it differs from current language
     if (settings.language && settings.language[0] && settings.language[0] !== i18n.language) {
@@ -130,7 +396,15 @@ export const useGeneralSettings = ({
     }
     localStorage.setItem(IMAGE_COMPRESSION_QUALITY_KEY, settings.imageCompressionQuality.toString());
     localStorage.setItem(IMAGE_MAX_WIDTH_KEY, settings.imageMaxWidth.toString());
-  }, [settings, bgUrlContext, baseUrl, onWsUrlChange, onBaseUrlChange, setShowSubtitle]);
+  }, [
+    settings,
+    bgUrlContext,
+    baseUrl,
+    onWsUrlChange,
+    onBaseUrlChange,
+    setShowSubtitle,
+    validateBasicAuth,
+  ]);
 
   useEffect(() => {
     if (confName) {
@@ -146,29 +420,25 @@ export const useGeneralSettings = ({
     }
   }, [confName]);
 
-  // Add save/cancel effect
-  useEffect(() => {
-    if (!onSave || !onCancel) return;
-
-    const cleanupSave = onSave(() => {
-      handleSave();
-    });
-
-    const cleanupCancel = onCancel(() => {
-      handleCancel();
-    });
-
-    return () => {
-      cleanupSave?.();
-      cleanupCancel?.();
-    };
-  }, [onSave, onCancel]);
-
   const handleSettingChange = (
     key: keyof GeneralSettings,
     value: GeneralSettings[keyof GeneralSettings],
   ): void => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSettings((prev) => {
+      const next = { ...prev, [key]: value } as GeneralSettings;
+      if (
+        key === 'basicAuthEnabled'
+        || key === 'basicAuthUsername'
+        || key === 'basicAuthPassword'
+      ) {
+        validateBasicAuth(
+          next.basicAuthEnabled,
+          next.basicAuthUsername,
+          next.basicAuthPassword,
+        );
+      }
+      return next;
+    });
 
     if (key === 'wsUrl') {
       onWsUrlChange(value as string);
@@ -176,15 +446,42 @@ export const useGeneralSettings = ({
     if (key === 'baseUrl') {
       onBaseUrlChange(value as string);
     }
+    if (key === 'basicAuthEnabled') {
+      onBasicAuthEnabledChange(value as boolean);
+    }
+    if (key === 'basicAuthUsername') {
+      onBasicAuthUsernameChange(value as string);
+    }
+    if (key === 'basicAuthPassword') {
+      onBasicAuthPasswordChange(value as string);
+    }
     // Immediately change language when it's updated
     if (key === 'language' && Array.isArray(value) && value.length > 0) {
       i18n.changeLanguage(value[0]);
     }
   };
 
-  const handleSave = (): void => {
+  const handleSave = useCallback((): boolean => {
+    const isValid = validateBasicAuth(
+      settings.basicAuthEnabled,
+      settings.basicAuthUsername,
+      settings.basicAuthPassword,
+    );
+    if (!isValid) {
+      return false;
+    }
+
+    const changedSinceLastSave = !settingsEqual(originalSettings, settings);
     setOriginalSettings(settings);
-  };
+
+    if (changedSinceLastSave && typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 200);
+    }
+
+    return true;
+  }, [settings, originalSettings, validateBasicAuth, setOriginalSettings]);
 
   const handleCancel = (): void => {
     setSettings(originalSettings);
@@ -197,6 +494,14 @@ export const useGeneralSettings = ({
     }
     onWsUrlChange(originalSettings.wsUrl);
     onBaseUrlChange(originalSettings.baseUrl);
+    onBasicAuthEnabledChange(originalSettings.basicAuthEnabled);
+    onBasicAuthUsernameChange(originalSettings.basicAuthUsername);
+    onBasicAuthPasswordChange(originalSettings.basicAuthPassword);
+    validateBasicAuth(
+      originalSettings.basicAuthEnabled,
+      originalSettings.basicAuthUsername,
+      originalSettings.basicAuthPassword,
+    );
 
     // Restore original character preset
     if (originalConfName) {
@@ -210,6 +515,21 @@ export const useGeneralSettings = ({
       stopBackgroundCamera();
     }
   };
+
+  useEffect(() => {
+    if (!onSave || !onCancel) return;
+
+    const cleanupSave = onSave(handleSave);
+
+    const cleanupCancel = onCancel(() => {
+      handleCancel();
+    });
+
+    return () => {
+      cleanupSave?.();
+      cleanupCancel?.();
+    };
+  }, [onSave, onCancel, handleSave, handleCancel]);
 
   const handleCharacterPresetChange = (value: string[]): void => {
     const selectedFilename = value[0];
@@ -256,5 +576,6 @@ export const useGeneralSettings = ({
     handleCharacterPresetChange,
     showSubtitle,
     setShowSubtitle,
+    basicAuthErrors,
   };
 };

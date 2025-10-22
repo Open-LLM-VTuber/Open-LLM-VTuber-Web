@@ -1,139 +1,151 @@
 {
-  "common": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "settings": "Settings",
-    "close": "Close",
-    "accept": "Accept"
-  },
-  "settings": {
-    "tabs": {
-      "general": "General",
-      "live2d": "Live2D",
-      "asr": "ASR",
-      "tts": "TTS",
-      "agent": "Agent",
-      "about": "About"
-    },
-    "general": {
-      "language": "Language",
-      "useCameraBackground": "Use Camera Background",
-      "showSubtitle": "Show Subtitle",
-      "backgroundImage": "Background Image",
-      "customBgUrlPlaceholder": "Enter image URL",
-      "customBgUrl": "Or enter a custom background URL",
-      "characterPreset": "Character Preset",
-      "wsUrl": "WebSocket URL",
-      "baseUrl": "Base URL",
-      "imageCompressionQuality": "Image Compression Quality",
-      "imageCompressionQualityPlaceholder": "Enter compression quality (0-100)",
-      "imageCompressionQualityHelp": "JPEG compression quality (0.1-1.0). Default is 0.8 to reduce file size when transmitting images to AI models, as we don't compress images during API transmission which could result in large file sizes.",
-      "imageMaxWidth": "Image Max Width",
-      "imageMaxWidthPlaceholder": "Enter maximum width in pixels",
-      "imageMaxWidthHelp": "Maximum width for image resizing. Images exceeding this width will be proportionally scaled down. Set to 0 for no size limit. This feature exists because some AI models may have limitations when processing very large images. However, most AI models can handle images automatically, so the default is 0 (no restriction) to preserve your original images."
-    },
-    "live2d": {
-      "pointerInteractive": "Pointer Interactive",
-      "scrollToResize": "Enable Scroll to Resize"
-    },
-    "asr": {
-      "autoStopMic": "Auto Stop Mic When AI Start Speaking",
-      "autoStopMicDesc": "Automatically stops microphone when AI begins speaking to prevent audio feedback",
-      "autoStartMicOnConvEnd": "Auto Start Mic When Conversation End",
-      "autoStartMicOnConvEndDesc": "Automatically restarts microphone when AI finishes speaking for seamless conversation",
-      "autoStartMicOn": "Auto Start Mic When AI Interrupted",
-      "autoStartMicOnDesc": "Automatically restarts microphone when you interrupt AI for continuous interaction",
-      "positiveSpeechThreshold": "Speech Prob Threshold",
-      "positiveSpeechThresholdDesc": "Minimum confidence level (1-100) required to detect speech. Higher values reduce false positives",
-      "negativeSpeechThreshold": "Negative Speech Threshold",
-      "negativeSpeechThresholdDesc": "Confidence level (0-100) below which speech detection stops. Lower values make detection less sensitive",
-      "redemptionFrames": "Redemption Frames",
-      "redemptionFramesDesc": "Number of consecutive frames (1-100) needed to confirm speech detection. Higher values reduce noise triggers"
-    },
-    "agent": {
-      "allowProactiveSpeak": "Allow AI to Speak Proactively",
-      "idleSecondsToSpeak": "Idle seconds allow AI to speak",
-      "allowButtonTrigger": "Prompt AI to Speak via Raise Hand Button"
-    },
-    "about": {
-      "title": "Open LLM VTuber Frontend",
-      "version": "Version",
-      "projectLinks": "Project Links",
-      "github": "GitHub",
-      "documentation": "Documentation",
-      "license": "License",
-      "copyright": "Copyright",
-      "viewLicense": "View License"
-    }
-  },
-  "footer": {
-    "typeYourMessage": "Type your message...",
-    "cameraControl": "Click to start camera",
-    "cameraStopping": "Click to stop camera",
-    "screenControl": "Click to start screen capture",
-    "screenStopping": "Click to stop screen capture"
-  },
-  "sidebar": {
-    "camera": "Camera",
-    "screen": "Screen",
-    "browser": "Browser",
-    "live": "Live",
-    "noMessages": "No messages yet. Start a conversation!",
-    "noBrowserSession": "No active browser session",
-    "browserSession": "Browser Session"
-  },
-  "group": {
-    "management": "Group Management",
-    "yourUuid": "Your UUID",
-    "inviteMember": "Invite Member",
-    "enterMemberUuid": "Enter member UUID",
-    "invite": "Invite",
-    "members": "Members",
-    "you": "You",
-    "leaveGroup": "Leave Group",
-    "removeMember": "Remove Member",
-    "leave": "Leave"
-  },
-  "history": {
-    "chatHistoryList": "Chat History List",
-    "noMessages": "No messages"
-  },
-  "notification": {
-    "characterLoaded": "New Character Loaded",
-    "characterSwitched": "Character switched",
-    "historyLoaded": "History loaded",
-    "newConversation": "New Conversation Started",
-    "newChatHistory": "New chat history created",
-    "historyDeleteSuccess": "History deleted successfully",
-    "historyDeleteFail": "Failed to delete history"
-  },
-  "error": {
-    "cameraApiNotSupported": "Camera API is not supported on this device",
-    "noCameraFound": "No camera found on this device",
-    "failedStartCamera": "Failed to start camera",
-    "failedStartBackgroundCamera": "Failed to start background camera",
-    "failedStartScreenCapture": "Failed to start screen capture",
-    "failedStartVAD": "Failed to start VAD",
-    "llmCantHear": "The LLM can't hear you.",
-    "audioPlayback": "Audio playback error",
-    "enterValidUuid": "Please enter a valid UUID",
-    "cannotDeleteCurrentHistory": "Cannot delete current chat history",
-    "failedCapture": "Failed to capture {{source}} frame",
-    "failedParseWebSocket": "Failed to parse WebSocket message",
-    "websocketNotOpen": "WebSocket is not open.",
-    "vadMisfire": "Voice detected but too brief. Try speaking louder/longer, or adjust settings (lower speech threshold, lower negative threshold, reduce redemption frames)."
-  },
-  "aiState": {
-    "idle": "idle",
-    "thinking-speaking": "thinking/speaking",
-    "interrupted": "interrupted",
-    "loading": "loading",
-    "listening": "listening",
-    "waiting": "waiting"
-  },
-  "wsStatus": {
-    "connected": "Connected",
-    "connecting": "Connecting",
-    "clickToReconnect": "Click to Reconnect"
-  }
-} 
+    "common":  {
+                   "save":  "Save",
+                   "cancel":  "Cancel",
+                   "settings":  "Settings",
+                   "close":  "Close",
+                   "accept":  "Accept"
+               },
+    "settings":  {
+                     "tabs":  {
+                                  "general":  "General",
+                                  "live2d":  "Live2D",
+                                  "asr":  "ASR",
+                                  "tts":  "TTS",
+                                  "agent":  "Agent",
+                                  "about":  "About"
+                              },
+                     "general":  {
+                                     "language":  "Language",
+                                     "useCameraBackground":  "Use Camera Background",
+                                     "showSubtitle":  "Show Subtitle",
+                                     "backgroundImage":  "Background Image",
+                                     "customBgUrlPlaceholder":  "Enter image URL",
+                                     "customBgUrl":  "Or enter a custom background URL",
+                                     "characterPreset":  "Character Preset",
+                                     "wsUrl":  "WebSocket URL",
+                                     "baseUrl":  "Base URL",
+                                     "basicAuthEnabled":  "Enable Basic HTTP Auth",
+                                     "basicAuthUsername":  "Username",
+                                     "basicAuthUsernamePlaceholder":  "Enter username",
+                                     "basicAuthPassword":  "Password",
+                                     "basicAuthPasswordPlaceholder":  "Enter password",
+                                     "basicAuthUsernameRequired":  "Username is required when Basic Auth is enabled",
+                                     "basicAuthPasswordRequired":  "Password is required when Basic Auth is enabled",
+                                     "imageCompressionQuality":  "Image Compression Quality",
+                                     "imageCompressionQualityPlaceholder":  "Enter compression quality (0-100)",
+                                     "imageCompressionQualityHelp":  "JPEG compression quality (0.1-1.0). Default is 0.8 to reduce file size when transmitting images to AI models, as we don\u0027t compress images during API transmission which could result in large file sizes.",
+                                     "imageMaxWidth":  "Image Max Width",
+                                     "imageMaxWidthPlaceholder":  "Enter maximum width in pixels",
+                                     "imageMaxWidthHelp":  "Maximum width for image resizing. Images exceeding this width will be proportionally scaled down. Set to 0 for no size limit. This feature exists because some AI models may have limitations when processing very large images. However, most AI models can handle images automatically, so the default is 0 (no restriction) to preserve your original images."
+                                 },
+                     "live2d":  {
+                                    "pointerInteractive":  "Pointer Interactive",
+                                    "scrollToResize":  "Enable Scroll to Resize"
+                                },
+                     "asr":  {
+                                 "autoStopMic":  "Auto Stop Mic When AI Start Speaking",
+                                 "autoStopMicDesc":  "Automatically stops microphone when AI begins speaking to prevent audio feedback",
+                                 "autoStartMicOnConvEnd":  "Auto Start Mic When Conversation End",
+                                 "autoStartMicOnConvEndDesc":  "Automatically restarts microphone when AI finishes speaking for seamless conversation",
+                                 "autoStartMicOn":  "Auto Start Mic When AI Interrupted",
+                                 "autoStartMicOnDesc":  "Automatically restarts microphone when you interrupt AI for continuous interaction",
+                                 "positiveSpeechThreshold":  "Speech Prob Threshold",
+                                 "positiveSpeechThresholdDesc":  "Minimum confidence level (1-100) required to detect speech. Higher values reduce false positives",
+                                 "negativeSpeechThreshold":  "Negative Speech Threshold",
+                                 "negativeSpeechThresholdDesc":  "Confidence level (0-100) below which speech detection stops. Lower values make detection less sensitive",
+                                 "redemptionFrames":  "Redemption Frames",
+                                 "redemptionFramesDesc":  "Number of consecutive frames (1-100) needed to confirm speech detection. Higher values reduce noise triggers"
+                             },
+                     "agent":  {
+                                   "allowProactiveSpeak":  "Allow AI to Speak Proactively",
+                                   "idleSecondsToSpeak":  "Idle seconds allow AI to speak",
+                                   "allowButtonTrigger":  "Prompt AI to Speak via Raise Hand Button"
+                               },
+                     "about":  {
+                                   "title":  "Open LLM VTuber Frontend",
+                                   "version":  "Version",
+                                   "projectLinks":  "Project Links",
+                                   "github":  "GitHub",
+                                   "documentation":  "Documentation",
+                                   "license":  "License",
+                                   "copyright":  "Copyright",
+                                   "viewLicense":  "View License"
+                               }
+                 },
+    "footer":  {
+                   "typeYourMessage":  "Type your message...",
+                   "cameraControl":  "Click to start camera",
+                   "cameraStopping":  "Click to stop camera",
+                   "screenControl":  "Click to start screen capture",
+                   "screenStopping":  "Click to stop screen capture"
+               },
+    "sidebar":  {
+                    "camera":  "Camera",
+                    "screen":  "Screen",
+                    "browser":  "Browser",
+                    "live":  "Live",
+                    "noMessages":  "No messages yet. Start a conversation!",
+                    "noBrowserSession":  "No active browser session",
+                    "browserSession":  "Browser Session"
+                },
+    "group":  {
+                  "management":  "Group Management",
+                  "yourUuid":  "Your UUID",
+                  "inviteMember":  "Invite Member",
+                  "enterMemberUuid":  "Enter member UUID",
+                  "invite":  "Invite",
+                  "members":  "Members",
+                  "you":  "You",
+                  "leaveGroup":  "Leave Group",
+                  "removeMember":  "Remove Member",
+                  "leave":  "Leave"
+              },
+    "history":  {
+                    "chatHistoryList":  "Chat History List",
+                    "noMessages":  "No messages"
+                },
+    "notification":  {
+                         "characterLoaded":  "New Character Loaded",
+                         "characterSwitched":  "Character switched",
+                         "historyLoaded":  "History loaded",
+                         "newConversation":  "New Conversation Started",
+                         "newChatHistory":  "New chat history created",
+                         "historyDeleteSuccess":  "History deleted successfully",
+                         "historyDeleteFail":  "Failed to delete history"
+                     },
+    "error":  {
+                  "cameraApiNotSupported":  "Camera API is not supported on this device",
+                  "noCameraFound":  "No camera found on this device",
+                  "failedStartCamera":  "Failed to start camera",
+                  "failedStartBackgroundCamera":  "Failed to start background camera",
+                  "failedStartScreenCapture":  "Failed to start screen capture",
+                  "failedStartVAD":  "Failed to start VAD",
+                  "llmCantHear":  "The LLM can\u0027t hear you.",
+                  "audioPlayback":  "Audio playback error",
+                  "enterValidUuid":  "Please enter a valid UUID",
+                  "cannotDeleteCurrentHistory":  "Cannot delete current chat history",
+                  "failedCapture":  "Failed to capture {{source}} frame",
+                  "failedParseWebSocket":  "Failed to parse WebSocket message",
+                  "websocketNotOpen":  "WebSocket is not open.",
+                  "vadMisfire":  "Voice detected but too brief. Try speaking louder/longer, or adjust settings (lower speech threshold, lower negative threshold, reduce redemption frames).",
+                  "openSettings":  "Open Settings",
+                  "authFailed":  "Authentication failed",
+                  "authFailedDescription":  "Update your Basic HTTP Auth credentials in Settings ? General and try again."
+              },
+    "aiState":  {
+                    "idle":  "idle",
+                    "thinking-speaking":  "thinking/speaking",
+                    "interrupted":  "interrupted",
+                    "loading":  "loading",
+                    "listening":  "listening",
+                    "waiting":  "waiting"
+                },
+    "wsStatus":  {
+                     "connected":  "Connected",
+                     "connecting":  "Connecting",
+                     "clickToReconnect":  "Click to Reconnect",
+                     "authFailed":  "Auth failed - Click to reconnect"
+                 }
+}
+

@@ -104,6 +104,13 @@ export const Live2DConfigContext = createContext<Live2DConfigState | null>(null)
  * @param {Object} props - Provider props
  * @param {React.ReactNode} props.children - Child components
  */
+const normalizeModelUrl = (url: string | undefined): string | undefined => {
+  if (!url) return url;
+  if (/^ws:\/\//i.test(url)) return url.replace(/^ws:\/\//i, 'http://');
+  if (/^wss:\/\//i.test(url)) return url.replace(/^wss:\/\//i, 'https://');
+  return url;
+};
+
 export function Live2DConfigProvider({ children }: { children: React.ReactNode }) {
   const { confUid } = useConfig();
 
@@ -131,6 +138,7 @@ export function Live2DConfigProvider({ children }: { children: React.ReactNode }
 
     setModelInfoState({
       ...info,
+      url: normalizeModelUrl(info.url) ?? '',
       kScale: finalScale,
       pointerInteractive:
         "pointerInteractive" in info

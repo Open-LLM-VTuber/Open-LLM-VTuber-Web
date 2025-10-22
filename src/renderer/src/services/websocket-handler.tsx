@@ -3,7 +3,7 @@
 // eslint-disable-next-line object-curly-newline
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { wsService, MessageEvent } from '@/services/websocket-service';
+import { wsService, MessageEvent, type WebSocketConnectionState } from '@/services/websocket-service';
 import {
   WebSocketContext, HistoryInfo, defaultWsUrl, defaultBaseUrl,
 } from '@/context/websocket-context';
@@ -21,12 +21,40 @@ import { useLocalStorage } from '@/hooks/utils/use-local-storage';
 import { useGroup } from '@/context/group-context';
 import { useInterrupt } from '@/hooks/utils/use-interrupt';
 import { useBrowser } from '@/context/browser-context';
+import { deriveWsUrl, normalizeHttpOrigin, updateBackendConfig } from '@/services/backend-settings';
+import { ensureAuthFetchInterceptor } from '@/services/auth-notifier';
+import { AUTH_STATUS_EVENT } from '@/constants/events';
+
+const normalizeResourceUrl = (base: string, resource: string) => {
+  const normalizeScheme = (value: string) => {
+    if (/^ws:\/\//i.test(value)) return value.replace(/^ws:\/\//i, 'http://');
+    if (/^wss:\/\//i.test(value)) return value.replace(/^wss:\/\//i, 'https://');
+    return value;
+  };
+
+  const safeBase = normalizeScheme(base);
+  const safeResource = normalizeScheme(resource);
+
+  try {
+    return new URL(safeResource).toString();
+  } catch {
+    try {
+      return new URL(safeResource, safeBase).toString();
+    } catch {
+      return safeResource;
+    }
+  }
+};
 
 function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const [wsState, setWsState] = useState<string>('CLOSED');
+  const [wsState, setWsState] = useState<WebSocketConnectionState>('CLOSED');
+  const [hasAuthFailure, setHasAuthFailure] = useState(false);
   const [wsUrl, setWsUrl] = useLocalStorage<string>('wsUrl', defaultWsUrl);
   const [baseUrl, setBaseUrl] = useLocalStorage<string>('baseUrl', defaultBaseUrl);
+  const [basicAuthEnabled, setBasicAuthEnabled] = useLocalStorage<boolean>('basicAuthEnabled', false);
+  const [basicAuthUsername, setBasicAuthUsername] = useLocalStorage<string>('basicAuthUsername', 'admin');
+  const [basicAuthPassword, setBasicAuthPassword] = useLocalStorage<string>('basicAuthPassword', 'change-me');
   const { aiState, setAiState, backendSynthComplete, setBackendSynthComplete } = useAiState();
   const { setModelInfo } = useLive2DConfig();
   const { setSubtitleText } = useSubtitle();
@@ -42,8 +70,34 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { setBrowserViewData } = useBrowser();
 
   useEffect(() => {
+    ensureAuthFetchInterceptor();
+  }, []);
+
+  useEffect(() => {
     autoStartMicOnConvEndRef.current = autoStartMicOnConvEnd;
   }, [autoStartMicOnConvEnd]);
+
+  useEffect(() => {
+    const listener: EventListener = (event) => {
+      const detail = (event as CustomEvent<{ status?: 'authorized' | 'unauthorized' }>).detail;
+      if (detail?.status === 'unauthorized') {
+        setHasAuthFailure(true);
+      } else if (detail?.status === 'authorized') {
+        setHasAuthFailure(false);
+      }
+    };
+
+    window.addEventListener(AUTH_STATUS_EVENT, listener);
+    return () => {
+      window.removeEventListener(AUTH_STATUS_EVENT, listener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!basicAuthEnabled) {
+      setHasAuthFailure(false);
+    }
+  }, [basicAuthEnabled]);
 
   useEffect(() => {
     if (pendingModelInfo && confUid) {
@@ -111,13 +165,16 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         if (message.client_uid) {
           setSelfUid(message.client_uid);
         }
-        setPendingModelInfo(message.model_info);
-        // setModelInfo(message.model_info);
-        // We don't know when the confRef in live2d-config-context will be updated, so we set a delay here for convenience
-        if (message.model_info && !message.model_info.url.startsWith("http")) {
-          const modelUrl = baseUrl + message.model_info.url;
-          // eslint-disable-next-line no-param-reassign
-          message.model_info.url = modelUrl;
+        if (message.model_info) {
+          const normalizedModelInfo = {
+            ...message.model_info,
+            url: normalizeResourceUrl(baseUrl, message.model_info.url),
+          };
+          setPendingModelInfo(normalizedModelInfo);
+          // setModelInfo(message.model_info);
+          // We don't know when the confRef in live2d-config-context will be updated, so we set a delay here for convenience
+        } else {
+          setPendingModelInfo(undefined);
         }
 
         setAiState('idle');
@@ -149,7 +206,10 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         break;
       case 'background-files':
         if (message.files) {
+          console.log('[WS Handler] Received background files', message.files);
           bgUrlContext?.setBackgroundFiles(message.files);
+        } else {
+          console.log('[WS Handler] Received background-files message with no files payload');
         }
         break;
       case 'audio':
@@ -292,8 +352,34 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, handleControlMessage, appendOrUpdateToolCallMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
-    wsService.connect(wsUrl);
-  }, [wsUrl]);
+    const normalizedBase = normalizeHttpOrigin(baseUrl);
+    if (normalizedBase !== baseUrl) {
+      setBaseUrl(normalizedBase);
+      return;
+    }
+
+    const authConfig = {
+      enabled: basicAuthEnabled,
+      username: basicAuthUsername,
+      password: basicAuthPassword,
+    };
+
+    updateBackendConfig({
+      baseUrl: normalizedBase,
+      wsUrl,
+      basicAuth: authConfig,
+    });
+
+    const targetUrl = deriveWsUrl(normalizedBase, wsUrl);
+    wsService.connect(targetUrl, { basicAuth: authConfig });
+  }, [
+    baseUrl,
+    setBaseUrl,
+    wsUrl,
+    basicAuthEnabled,
+    basicAuthUsername,
+    basicAuthPassword,
+  ]);
 
   useEffect(() => {
     const stateSubscription = wsService.onStateChange(setWsState);
@@ -304,15 +390,52 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
     };
   }, [wsUrl, handleWebSocketMessage]);
 
+  const effectiveWsState: WebSocketConnectionState = hasAuthFailure ? 'UNAUTHORIZED' : wsState;
+
   const webSocketContextValue = useMemo(() => ({
     sendMessage: wsService.sendMessage.bind(wsService),
-    wsState,
-    reconnect: () => wsService.connect(wsUrl),
+    wsState: effectiveWsState,
+    reconnect: () => {
+      const normalizedBase = normalizeHttpOrigin(baseUrl);
+      if (normalizedBase !== baseUrl) {
+        setBaseUrl(normalizedBase);
+        return;
+      }
+      const authConfig = {
+        enabled: basicAuthEnabled,
+        username: basicAuthUsername,
+        password: basicAuthPassword,
+      };
+      updateBackendConfig({
+        baseUrl: normalizedBase,
+        wsUrl,
+        basicAuth: authConfig,
+      });
+      wsService.reconnect();
+    },
     wsUrl,
     setWsUrl,
     baseUrl,
     setBaseUrl,
-  }), [wsState, wsUrl, baseUrl]);
+    basicAuthEnabled,
+    setBasicAuthEnabled,
+    basicAuthUsername,
+    setBasicAuthUsername,
+    basicAuthPassword,
+    setBasicAuthPassword,
+  }), [
+    effectiveWsState,
+    wsUrl,
+    baseUrl,
+    basicAuthEnabled,
+    basicAuthUsername,
+    basicAuthPassword,
+    setWsUrl,
+    setBaseUrl,
+    setBasicAuthEnabled,
+    setBasicAuthUsername,
+    setBasicAuthPassword,
+  ]);
 
   return (
     <WebSocketContext.Provider value={webSocketContextValue}>
