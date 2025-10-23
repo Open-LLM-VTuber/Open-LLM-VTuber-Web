@@ -31,8 +31,38 @@
       "imageMaxWidthHelp": "图片缩放的最大宽度。超过此宽度的图片会按比例缩小。设为0表示不限制大小。此功能存在的原因是某些AI模型在处理超大尺寸图片时可能存在限制。但是大部分AI模型都能自动处理图片，因此默认值为0（不限制），以保持您原始图片的完整性。"
     },
     "live2d": {
-      "pointerInteractive": "鼠标交互",
-      "scrollToResize": "启用滚轮缩放"
+      "pointerInteractive": "指针交互",
+      "scrollToResize": "启用滚轮缩放",
+      "import": {
+        "button": "从卡片导入角色",
+        "title": "导入 SillyTavern 角色卡",
+        "description": "选择一个 SillyTavern 角色卡（.png 或 .json），预览信息并创建新的角色配置。",
+        "fileLabel": "角色卡文件",
+        "fileName": "已选择文件：{{name}}",
+        "parsing": "正在解析角色卡…",
+        "preview": "角色预览",
+        "name": "名称",
+        "descriptionPersonality": "描述 / 人设",
+        "scenario": "场景设定",
+        "firstMessage": "首次问候",
+        "examples": "对话示例",
+        "noExamples": "没有示例消息",
+        "system": "系统 / 历史追加提示",
+        "noSystem": "没有系统提示",
+        "avatarPreview": "头像预览",
+        "model": "Live2D 模型",
+        "loadingModels": "正在加载模型…",
+        "saveAvatar": "保存 PNG 作为头像",
+        "creating": "正在创建…",
+        "create": "创建角色",
+        "toastModelError": "加载 Live2D 模型失败",
+        "toastPersonaPromptError": "无法从角色卡生成人格提示",
+        "toastParseError": "解析角色卡失败",
+        "toastSuccess": "角色已创建：{{name}}",
+        "toastCreateError": "创建角色失败",
+        "saveAvatarHint": "仅 PNG 角色卡可保存内置头像，选择 PNG 卡片后可启用此选项。",
+        "modelLoadError": "未找到可用的 Live2D 模型，请检查 model_dict.json 或服务器配置。"
+      }
     },
     "asr": {
       "autoStopMic": "AI开始说话时自动关闭麦克风",
@@ -133,4 +163,4 @@
     "connecting": "连接中",
     "clickToReconnect": "点击重新连接"
   }
-} 
+}

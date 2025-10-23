@@ -34,7 +34,37 @@
     },
     "live2d": {
       "pointerInteractive": "Pointer Interactive",
-      "scrollToResize": "Enable Scroll to Resize"
+      "scrollToResize": "Enable Scroll to Resize",
+      "import": {
+        "button": "Import Character from Card",
+        "title": "Import SillyTavern Card",
+        "description": "Select a SillyTavern Character Card (.png or .json) to preview and create a new character.",
+        "fileLabel": "Character Card",
+        "fileName": "Selected file: {{name}}",
+        "parsing": "Parsing card...",
+        "preview": "Preview",
+        "name": "Name",
+        "descriptionPersonality": "Description / Personality",
+        "scenario": "Scenario",
+        "firstMessage": "First Message",
+        "examples": "Example Messages",
+        "noExamples": "No example messages",
+        "system": "System / Post-history Instructions",
+        "noSystem": "No system instructions",
+        "avatarPreview": "Avatar Preview",
+        "model": "Live2D Model",
+        "loadingModels": "Loading models...",
+        "saveAvatar": "Save PNG as avatar",
+        "creating": "Creating...",
+        "create": "Create Character",
+        "toastModelError": "Failed to load Live2D models",
+        "toastPersonaPromptError": "Unable to compose a persona prompt from the card",
+        "toastParseError": "Unable to parse character card",
+        "toastSuccess": "Character created: {{name}}",
+        "toastCreateError": "Failed to create character",
+        "saveAvatarHint": "PNG cards can save their embedded avatar. Select a PNG card to enable this option.",
+        "modelLoadError": "No Live2D models found. Check model_dict.json or server configuration."
+      }
     },
     "asr": {
       "autoStopMic": "Auto Stop Mic When AI Start Speaking",
@@ -136,4 +166,4 @@
     "connecting": "Connecting",
     "clickToReconnect": "Click to Reconnect"
   }
-} 
+}

@@ -42,6 +42,7 @@
     "i18next-scanner": "^4.6.0",
     "next-themes": "^0.4.4",
     "onnxruntime-web": "1.14.0",
+    "pako": "^2.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.5.1",
