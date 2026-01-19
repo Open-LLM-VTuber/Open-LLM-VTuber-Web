@@ -1,8 +1,8 @@
 /**
  * Language display names mapping (FALLBACK ONLY)
  *
- * 백엔드가 이미 label을 제공하므로, 이 매핑은 API 실패 시에만 사용됩니다.
- * 백엔드 I18nManager.LANGUAGE_LABELS와 일치해야 합니다.
+ * Backend already provides labels, this mapping is only used when API fails.
+ * Should match backend I18nManager.LANGUAGE_LABELS.
  */
 
 /**
@@ -12,12 +12,12 @@
  * @returns Display name for the language
  *
  * @example
- * // 일반적인 사용 (백엔드 API 사용)
+ * // Normal usage (use backend API)
  * const languages = await fetchAvailableLanguages();
- * languages.forEach(lang => console.log(lang.label)); // 백엔드가 제공한 label 사용
+ * languages.forEach(lang => console.log(lang.label)); // Use backend-provided label
  *
  * @example
- * // 폴백 사용 (API 실패 시만)
+ * // Fallback usage (only when API fails)
  * const fallbackLabel = getLanguageLabel('ko'); // "한국어"
  */
 export function getLanguageLabel(code: string): string {

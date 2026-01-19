@@ -8,7 +8,7 @@ import { useConfig } from "@/context/character-config-context";
 import { useGeneralSettings } from "@/hooks/sidebar/setting/use-general-settings";
 import { useWebSocket } from "@/context/websocket-context";
 import { SelectField, SwitchField, InputField } from "./common";
-import { fetchLanguagesWithFallback, type LanguageInfo } from "@/utils/languageApi";
+import { fetchLanguagesWithFallback, DEFAULT_BASE_URL, type LanguageInfo } from "@/utils/languageApi";
 import { loadLanguageDynamically } from "@/i18n";
 
 interface GeneralProps {
@@ -30,19 +30,19 @@ const useCollections = () => {
 
   // Fetch languages from backend API
   useEffect(() => {
-    let cancelled = false;  // cleanup 플래그
+    let cancelled = false;  // Cleanup flag
 
     const loadLanguages = async () => {
       try {
-        // 백엔드에서 LanguageInfo[] 형태로 받음: [{code, label}, ...]
+        // Fetch LanguageInfo[] from backend: [{code, label}, ...]
         const languages: LanguageInfo[] = await fetchLanguagesWithFallback(
-          baseUrl || 'http://localhost:12393'
+          baseUrl || DEFAULT_BASE_URL
         );
 
-        if (!cancelled) {  // 컴포넌트가 마운트된 경우만 업데이트
-          // 백엔드가 이미 label을 제공하므로 직접 사용
+        if (!cancelled) {  // Only update if component is still mounted
+          // Use backend-provided labels directly
           const items = languages.map(lang => ({
-            label: lang.label,  // 백엔드에서 제공한 네이티브 라벨 사용
+            label: lang.label,  // Use native label from backend
             value: lang.code,
           }));
           setLanguageItems(items);
@@ -56,7 +56,7 @@ const useCollections = () => {
     loadLanguages();
 
     return () => {
-      cancelled = true;  // cleanup 시 플래그 설정
+      cancelled = true;  // Set flag on cleanup
     };
   }, [baseUrl]);
 
@@ -134,9 +134,12 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
     }
   };
 
-  if (settings.language[0] !== i18n.language) {
-    handleSettingChange("language", [i18n.language]);
-  }
+  // Sync settings.language with i18n.language when they differ
+  useEffect(() => {
+    if (settings.language[0] !== i18n.language) {
+      handleSettingChange("language", [i18n.language]);
+    }
+  }, [settings.language, i18n.language, handleSettingChange]);
 
   return (
     <Stack {...settingStyles.common.container}>

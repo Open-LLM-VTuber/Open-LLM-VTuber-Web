@@ -1,61 +1,53 @@
 # Frontend Integration Plan - Dynamic Languages API
 
-## ⚠️ 구현 시 주의사항
+## ⚠️ Implementation Warnings
 
-### 1. Vite 동적 import 제한
+### 1. Vite Dynamic Import Constraints
 
-Vite는 완전 동적 경로 import에 제한이 있습니다. glob import 패턴을 사용해야 합니다:
+Vite has limitations with fully dynamic import paths. Must use glob import patterns:
 
 ```typescript
-// ❌ 문제 발생 가능 - Vite에서 경로를 정적으로 분석할 수 없음
+// ❌ May cause issues - Vite cannot statically analyze path
 const translation = await import(`./locales/${lang}/translation.json`);
 
-// ✅ Vite 권장 방식 - glob 패턴으로 가능한 경로를 미리 정의
+// ✅ Vite recommended approach - pre-define possible paths with glob pattern
 const modules = import.meta.glob('./locales/*/translation.json');
 const translation = await modules[`./locales/${lang}/translation.json`]();
 ```
 
-**이유**: Vite는 빌드 시 정적 분석으로 번들링하므로, 런타임에 결정되는 완전 동적 경로는 지원하지 않습니다.
+**Reason**: Vite bundles via static analysis at build time, so runtime-determined dynamic paths are not supported.
 
-### 2. 이중 초기화 방지
+### 2. Prevent Double Initialization
 
-`i18n.ts` 파일 끝의 자동 초기화와 `App.tsx`의 초기화가 충돌할 수 있습니다:
+**CRITICAL FIX APPLIED**: The async i18n initialization approach caused React Hook order issues. The implementation now uses synchronous initialization for base languages.
 
-```typescript
-// i18n.ts 끝부분 - 자동 초기화
-initializeI18n().catch(error => {
-  console.error('Auto-initialization failed:', error);
-});
+**Final Solution**:
+- `i18n.ts`: Synchronous initialization with base languages (en, zh) using static imports
+- `general.tsx`: Dynamic language list from API maintained
+- New language selection: Lazy load with `i18n.addResourceBundle()`
+- NO auto-initialization at module load - i18n is ready immediately
 
-// App.tsx - 명시적 초기화
-useEffect(() => {
-  initializeI18n(baseUrl).then(...)
-}, [baseUrl]);
-```
+### 3. useEffect Cleanup Required
 
-**해결 방법**: `App.tsx`에서만 `initializeI18n()` 호출하도록 통일하고, `i18n.ts`의 자동 초기화는 제거하거나 조건부로 실행합니다.
-
-### 3. useEffect cleanup 필수
-
-컴포넌트가 unmount될 때 비동기 작업의 상태 업데이트를 방지해야 합니다:
+Must prevent state updates from async operations when component unmounts:
 
 ```typescript
-// ❌ 문제 발생 가능 - cleanup 없음
+// ❌ May cause issues - no cleanup
 useEffect(() => {
   const loadLanguages = async () => {
     const codes = await fetchLanguagesWithFallback(baseUrl);
-    setLanguageItems(items); // 컴포넌트가 이미 unmount되었을 수 있음
+    setLanguageItems(items); // Component may already be unmounted
   };
   loadLanguages();
 }, [baseUrl]);
 
-// ✅ cleanup으로 메모리 누수 방지
+// ✅ Prevent memory leaks with cleanup
 useEffect(() => {
   let cancelled = false;
 
   const loadLanguages = async () => {
     const codes = await fetchLanguagesWithFallback(baseUrl);
-    if (!cancelled) {  // 컴포넌트가 마운트된 경우만 업데이트
+    if (!cancelled) {  // Only update if component is still mounted
       setLanguageItems(items);
     }
   };
@@ -63,12 +55,30 @@ useEffect(() => {
   loadLanguages();
 
   return () => {
-    cancelled = true;  // cleanup 시 플래그 설정
+    cancelled = true;  // Set flag on cleanup
   };
 }, [baseUrl]);
 ```
 
-**이유**: 비동기 작업이 완료되기 전에 컴포넌트가 unmount되면 "Can't perform a React state update on an unmounted component" 경고가 발생합니다.
+**Reason**: If component unmounts before async operation completes, "Can't perform a React state update on an unmounted component" warning occurs.
+
+### 4. Avoid Render-Phase State Updates
+
+**HIGH PRIORITY FIX APPLIED**: State updates must not occur during render phase. Use useEffect instead:
+
+```typescript
+// ❌ Violates React purity rules
+if (settings.language[0] !== i18n.language) {
+  handleSettingChange("language", [i18n.language]);
+}
+
+// ✅ Use useEffect for synchronization
+useEffect(() => {
+  if (settings.language[0] !== i18n.language) {
+    handleSettingChange("language", [i18n.language]);
+  }
+}, [settings.language, i18n.language, handleSettingChange]);
+```
 
 ---
 
@@ -696,25 +706,34 @@ npm run dev
 
 ---
 
-## 구현 순서
+## Implementation Status
 
-1. ✅ **현재 상태 분석 완료**
-2. ⏳ **Utility 함수 생성**
-   - `src/renderer/src/utils/languageApi.ts`
-   - `src/renderer/src/utils/languageNames.ts`
-   - `src/renderer/src/types/language.ts`
-3. ⏳ **i18n.ts 리팩토링**
-   - 동적 import 구현
-   - API 통합
-4. ⏳ **general.tsx 리팩토리**
-   - 동적 언어 목록 사용
-5. ⏳ **App.tsx 수정** (필요 시)
-   - i18n 초기화 대기 로직
-6. ⏳ **테스트 및 검증**
-   - 로컬 환경에서 모든 시나리오 테스트
-7. ⏳ **문서화**
-   - CHANGELOG 작성
-   - 사용법 가이드 업데이트
+1. ✅ **Current State Analysis Complete**
+2. ✅ **Utility Functions Created**
+   - ✅ `src/renderer/src/utils/languageApi.ts` - with DEFAULT_BASE_URL constant
+   - ✅ `src/renderer/src/utils/languageNames.ts` - fallback mapping
+   - ✅ `src/renderer/src/types/language.ts` - TypeScript types
+3. ✅ **i18n.ts Refactoring**
+   - ✅ Synchronous initialization with base languages (en, zh)
+   - ✅ Dynamic loading function `loadLanguageDynamically()`
+   - ✅ Vite glob import pattern
+   - ✅ Prevented double initialization (critical bug fix)
+4. ✅ **general.tsx Refactoring**
+   - ✅ Dynamic language list from API
+   - ✅ useEffect cleanup implemented
+   - ✅ Fixed render-phase state update (HIGH PRIORITY)
+   - ✅ Backend label usage (no mapping needed)
+5. ✅ **Korean Translation Added**
+   - ✅ `src/renderer/src/locales/ko/translation.json` (139 keys)
+6. ✅ **Code Quality Fixes**
+   - ✅ All Korean comments translated to English
+   - ✅ Hardcoded URLs extracted to DEFAULT_BASE_URL constant
+   - ✅ TypeScript type safety (no `any` types)
+7. ⏳ **Testing & Verification**
+   - Local environment testing in progress
+8. ⏳ **Documentation**
+   - This plan document updated
+   - CHANGELOG needs creation
 
 ---
 
@@ -780,18 +799,32 @@ npm run dev
 
 ---
 
-## 변경 이력
+## Change History
 
-### 2026-01-20 (v2.0 업데이트)
-- **백엔드 API 변경 반영**: 이제 백엔드가 `{code, label}` 형태로 언어 정보 제공
-- **구현 시 주의사항 추가**: Vite 동적 import 제한, 이중 초기화 방지, useEffect cleanup
-- **코드 단순화**: 프론트엔드에서 label 매핑 불필요 (약 110줄 감소)
-- **타입 안전성 강화**: `LanguageInfo` 타입 전반 적용
+### 2026-01-20 (Implementation Complete + Code Review Fixes)
+- **Implementation completed**: All planned features implemented
+- **Critical bug fix**: React Hook order issue from async initialization resolved
+  - Changed to synchronous init with lazy loading
+  - Added `loadLanguageDynamically()` export function
+- **Code review fixes applied**:
+  - HIGH PRIORITY: Fixed render-phase state update in general.tsx
+  - MEDIUM: Extracted hardcoded URLs to DEFAULT_BASE_URL constant
+  - MEDIUM: Translated all Korean comments to English
+  - MEDIUM: Updated this plan document to match actual implementation
+- **Korean translation added**: Complete 139-key translation file
+- **Backend label integration**: Frontend directly uses backend-provided labels
+- **Type safety**: All `any` types replaced with proper type assertions
 
-### 2026-01-19 (초기 버전)
-- 최초 프론트엔드 통합 계획 작성
+### 2026-01-20 (v2.0 Planning Update)
+- **Backend API changes reflected**: Backend now provides `{code, label}` format
+- **Implementation warnings added**: Vite dynamic imports, double initialization, useEffect cleanup
+- **Code simplification**: Frontend label mapping unnecessary (reduced ~110 lines)
+- **Type safety enhanced**: `LanguageInfo` type applied throughout
+
+### 2026-01-19 (Initial Version)
+- Initial frontend integration plan created
 
 ---
 
 **Last Updated**: 2026-01-20
-**Status**: Planning Updated 📋 | Backend API Enhanced ✅ | Ready for Implementation 🚀
+**Status**: Implementation Complete ✅ | Code Review Fixes Applied ✅ | Ready for PR 🚀

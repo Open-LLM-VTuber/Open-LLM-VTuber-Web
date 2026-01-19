@@ -1,7 +1,7 @@
 /**
  * Language-related type definitions
  *
- * 참고: LanguageInfo는 utils/languageApi.ts에서 import하세요.
+ * Note: Import LanguageInfo from utils/languageApi.ts
  */
 
 import type { LanguageInfo } from '@/utils/languageApi';

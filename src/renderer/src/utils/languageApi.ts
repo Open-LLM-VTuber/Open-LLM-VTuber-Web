@@ -1,11 +1,16 @@
 /**
  * API utility for fetching available languages from backend
  *
- * 백엔드 API 변경사항 (v2.0+):
- * - 이전: languages: string[] (예: ["en", "zh", "ko"])
- * - 현재: languages: LanguageInfo[] (예: [{code: "en", label: "English"}, ...])
- * - 백엔드가 이제 네이티브 언어 라벨을 직접 제공합니다
+ * Backend API changes (v2.0+):
+ * - Before: languages: string[] (e.g., ["en", "zh", "ko"])
+ * - Now: languages: LanguageInfo[] (e.g., [{code: "en", label: "English"}, ...])
+ * - Backend now provides native language labels directly
  */
+
+/**
+ * Default backend base URL
+ */
+export const DEFAULT_BASE_URL = 'http://localhost:12393';
 
 export interface LanguageInfo {
   code: string;
@@ -21,12 +26,12 @@ export interface LanguageApiResponse {
 /**
  * Fetch available languages from backend /api/languages endpoint
  *
- * @param baseUrl - Backend base URL (default: http://localhost:12393)
+ * @param baseUrl - Backend base URL (default: DEFAULT_BASE_URL)
  * @returns Promise<LanguageInfo[]> - Array of language objects with code and label
  * @throws Error if API call fails
  */
 export async function fetchAvailableLanguages(
-  baseUrl: string = 'http://localhost:12393'
+  baseUrl: string = DEFAULT_BASE_URL
 ): Promise<LanguageInfo[]> {
   try {
     const response = await fetch(`${baseUrl}/api/languages`);
@@ -42,7 +47,7 @@ export async function fetchAvailableLanguages(
       throw new Error('Invalid API response format');
     }
 
-    // 백엔드가 이미 {code, label} 형태로 제공하므로 그대로 반환
+    // Backend already provides {code, label} format, return as-is
     return data.languages;
   } catch (error) {
     console.error('Error fetching languages from API:', error);
@@ -53,11 +58,11 @@ export async function fetchAvailableLanguages(
 /**
  * Fetch available languages with fallback
  *
- * @param baseUrl - Backend base URL
+ * @param baseUrl - Backend base URL (default: DEFAULT_BASE_URL)
  * @returns Promise<LanguageInfo[]> - Array of language objects (never fails)
  */
 export async function fetchLanguagesWithFallback(
-  baseUrl: string = 'http://localhost:12393'
+  baseUrl: string = DEFAULT_BASE_URL
 ): Promise<LanguageInfo[]> {
   try {
     return await fetchAvailableLanguages(baseUrl);
