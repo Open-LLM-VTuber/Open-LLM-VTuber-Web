@@ -36,12 +36,6 @@ function BrowserPanel(): JSX.Element {
 
   return (
     <Box {...sidebarStyles.browserPanel.container}>
-      <Box {...sidebarStyles.browserPanel.header}>
-        {browserViewData && (
-          <Text fontSize="sm" color="blue.300">{t('sidebar.browserSession')}</Text>
-        )}
-      </Box>
-
       <Tooltip
         showArrow
         content={
@@ -57,6 +51,11 @@ function BrowserPanel(): JSX.Element {
           onMouseLeave={handleMouseLeave}
           position="relative"
         >
+          {browserViewData && (
+            <Box position="absolute" top="8px" left="10px" zIndex={1}>
+              <Text fontSize="sm" color="blue.300">{t('sidebar.browserSession')}</Text>
+            </Box>
+          )}
           {browserViewData ? (
             <iframe
               src={browserViewData.debuggerFullscreenUrl}

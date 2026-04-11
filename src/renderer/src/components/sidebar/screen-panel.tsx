@@ -76,10 +76,6 @@ function ScreenPanel(): JSX.Element {
 
   return (
     <Box {...sidebarStyles.screenPanel.container}>
-      <Box {...sidebarStyles.screenPanel.header}>
-        {isStreaming && <ScreenIndicator />}
-      </Box>
-
       <Tooltip
         showArrow
         content={
@@ -100,6 +96,11 @@ function ScreenPanel(): JSX.Element {
             bg: "whiteAlpha.100",
           }}
         >
+          {isStreaming && (
+            <Box position="absolute" top="8px" left="10px" zIndex={1}>
+              <ScreenIndicator />
+            </Box>
+          )}
           {error ? (
             <Text color="red.300" fontSize="sm" textAlign="center">
               {error}

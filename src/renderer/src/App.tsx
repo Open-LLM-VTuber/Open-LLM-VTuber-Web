@@ -27,6 +27,7 @@ import { BrowserProvider } from "./context/browser-context";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import Background from "./components/canvas/background";
 import WebSocketStatus from "./components/canvas/ws-status";
+import AIStateIndicator from "./components/footer/ai-state-indicator";
 import Subtitle from "./components/canvas/subtitle";
 import { ModeProvider, useMode } from "./context/mode-context";
 
@@ -121,9 +122,10 @@ function AppContent(): JSX.Element {
             </Box>
             <Box {...layoutStyles.mainContent}>
               <Background />
-              <Box position="absolute" top="20px" left="20px" zIndex={10}>
+              <Flex position="absolute" top="20px" left="20px" zIndex={10} gap={2} alignItems="center">
                 <WebSocketStatus />
-              </Box>
+                <AIStateIndicator />
+              </Flex>
               <Box
                 position="absolute"
                 bottom={isFooterCollapsed ? "39px" : "135px"}

@@ -124,16 +124,31 @@
     "vadMisfire": "Voice detected but too brief. Try speaking louder/longer, or adjust settings (lower speech threshold, lower negative threshold, reduce redemption frames)."
   },
   "aiState": {
-    "idle": "idle",
-    "thinking-speaking": "thinking/speaking",
-    "interrupted": "interrupted",
-    "loading": "loading",
-    "listening": "listening",
-    "waiting": "waiting"
+    "idle": "AI Idle",
+    "thinking-speaking": "AI Speaking",
+    "interrupted": "AI Interrupted",
+    "loading": "AI Loading",
+    "listening": "AI Listening",
+    "waiting": "AI Waiting"
   },
   "wsStatus": {
-    "connected": "Connected",
-    "connecting": "Connecting",
-    "clickToReconnect": "Click to Reconnect"
+    "connected": "Server Connected",
+    "connecting": "Server Connecting...",
+    "clickToReconnect": "Disconnected. Click to Reconnect"
+  },
+  "tooltip": {
+    "settings": "Settings",
+    "group": "Group Management",
+    "chatHistory": "Chat History",
+    "newChat": "New Chat",
+    "changeMode": "Change Mode",
+    "collapseSidebar": "Collapse Sidebar",
+    "expandSidebar": "Expand Sidebar",
+    "micOn": "Microphone On (click to mute)",
+    "micOff": "Microphone Off (click to unmute)",
+    "raiseHand": "Raise Hand / Interrupt",
+    "attachFile": "Attach File",
+    "collapseInput": "Collapse Input",
+    "expandInput": "Expand Input"
   }
 } 

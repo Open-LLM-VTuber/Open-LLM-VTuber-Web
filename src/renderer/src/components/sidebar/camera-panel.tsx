@@ -78,10 +78,6 @@ function CameraPanel(): JSX.Element {
 
   return (
     <Box {...sidebarStyles.cameraPanel.container}>
-      <Box {...sidebarStyles.cameraPanel.header}>
-        {isStreaming && <LiveIndicator />}
-      </Box>
-
       <Tooltip
         showArrow
         content={isStreaming ? t('footer.cameraStopping') : t('footer.cameraControl')}
@@ -98,6 +94,11 @@ function CameraPanel(): JSX.Element {
             bg: 'whiteAlpha.100',
           }}
         >
+          {isStreaming && (
+            <Box position="absolute" top="8px" left="10px" zIndex={1}>
+              <LiveIndicator />
+            </Box>
+          )}
           {error ? (
             <Text color="red.300" fontSize="sm" textAlign="center">
               {error}
