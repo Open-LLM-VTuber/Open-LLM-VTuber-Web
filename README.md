@@ -8,13 +8,25 @@ An Electron application with React and TypeScript
 
 ## Project Setup
 
-### Install
+### Using Nix (Recommended for NixOS users)
+
+```bash
+nix develop
+npm install
+npm run dev
+```
+
+This provides a reproducible development environment with all necessary system dependencies.
+
+### Manual Setup
+
+#### Install
 
 ```bash
 $ npm install
 ```
 
-### Development
+#### Development
 
 ```bash
 $ npm run dev
