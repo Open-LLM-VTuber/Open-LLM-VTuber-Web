@@ -5,6 +5,9 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 
 const isMac = process.platform === 'darwin';
+const isWayland =
+  process.platform === 'linux' &&
+  (!!process.env.WAYLAND_DISPLAY || process.env.XDG_SESSION_TYPE === 'wayland');
 
 export class WindowManager {
   private window: BrowserWindow | null = null;
@@ -179,7 +182,7 @@ export class WindowManager {
       });
     }
 
-    this.window?.setIgnoreMouseEvents(false, { forward: true });
+    this.window.setIgnoreMouseEvents(false);
 
     this.window.webContents.send('mode-changed', 'window');
   }
@@ -203,24 +206,20 @@ export class WindowManager {
 
   private continueSetWindowModePet(): void {
     if (!this.window) return;
-    // Calculate the bounding rectangle that covers all connected displays.
-    // This allows the transparent pet-mode window to span across monitors,
-    // so the avatar can be dragged freely between them.
+
+    // Span all connected displays so the avatar can be dragged freely between monitors.
+    // On Wayland the overlay works identically — applyIgnoreMouseEvents strips the
+    // X11-only { forward: true } flag which was the original crash trigger.
     const displays = screen.getAllDisplays();
     const minX = Math.min(...displays.map((d) => d.bounds.x));
     const minY = Math.min(...displays.map((d) => d.bounds.y));
     const maxX = Math.max(...displays.map((d) => d.bounds.x + d.bounds.width));
     const maxY = Math.max(...displays.map((d) => d.bounds.y + d.bounds.height));
-    const combinedWidth = maxX - minX;
-    const combinedHeight = maxY - minY;
-
-    // Resize and position the window to cover the entire virtual screen
-    // so the avatar is not clipped when dragged to a second monitor.
     this.window.setBounds({
       x: minX,
       y: minY,
-      width: combinedWidth,
-      height: combinedHeight,
+      width: maxX - minX,
+      height: maxY - minY,
     });
 
     if (isMac) this.window.setWindowButtonVisibility(false);
@@ -229,30 +228,30 @@ export class WindowManager {
     this.window.setFocusable(false);
 
     if (isMac) {
-      this.window.setIgnoreMouseEvents(true);
-      this.window.setVisibleOnAllWorkspaces(true, {
-        visibleOnFullScreen: true,
-      });
-    } else {
-      this.window.setIgnoreMouseEvents(true, { forward: true });
+      this.window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     }
 
+    this.applyIgnoreMouseEvents(true);
     this.window.webContents.send('mode-changed', 'pet');
   }
-  
+
   getWindow(): BrowserWindow | null {
     return this.window;
   }
 
-  setIgnoreMouseEvents(ignore: boolean): void {
+  // Applies setIgnoreMouseEvents with platform-correct options.
+  // { forward: true } is an X11 input-shape feature — on Wayland it causes compositor crashes.
+  private applyIgnoreMouseEvents(ignore: boolean): void {
     if (!this.window) return;
-
-    if (isMac) {
+    if (isMac || isWayland) {
       this.window.setIgnoreMouseEvents(ignore);
-      // this.window.setIgnoreMouseEvents(ignore, { forward: true });
     } else {
       this.window.setIgnoreMouseEvents(ignore, { forward: true });
     }
+  }
+
+  setIgnoreMouseEvents(ignore: boolean): void {
+    this.applyIgnoreMouseEvents(ignore);
   }
 
   maximizeWindow(): void {
@@ -295,11 +294,7 @@ export class WindowManager {
 
     if (this.window) {
       const shouldIgnore = this.hoveringComponents.size === 0;
-      if (isMac) {
-        this.window.setIgnoreMouseEvents(shouldIgnore);
-      } else {
-        this.window.setIgnoreMouseEvents(shouldIgnore, { forward: true });
-      }
+      this.applyIgnoreMouseEvents(shouldIgnore);
       if (!shouldIgnore) {
         this.window.setFocusable(true);
       }
@@ -309,25 +304,8 @@ export class WindowManager {
   // Toggle force ignore mouse events
   toggleForceIgnoreMouse(): void {
     this.forceIgnoreMouse = !this.forceIgnoreMouse;
-
-    // Apply the new setting immediately
-    if (this.forceIgnoreMouse) {
-      if (isMac) {
-        this.window?.setIgnoreMouseEvents(true);
-      } else {
-        this.window?.setIgnoreMouseEvents(true, { forward: true });
-      }
-    } else {
-      // Reapply normal behavior based on hovering components
-      const shouldIgnore = this.hoveringComponents.size === 0;
-      if (isMac) {
-        this.window?.setIgnoreMouseEvents(shouldIgnore);
-      } else {
-        this.window?.setIgnoreMouseEvents(shouldIgnore, { forward: true });
-      }
-    }
-
-    // Notify renderer about the change
+    const shouldIgnore = this.forceIgnoreMouse || this.hoveringComponents.size === 0;
+    this.applyIgnoreMouseEvents(shouldIgnore);
     this.window?.webContents.send('force-ignore-mouse-changed', this.forceIgnoreMouse);
   }
 

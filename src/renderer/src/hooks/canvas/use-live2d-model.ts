@@ -238,6 +238,7 @@ export const useLive2DModel = ({
         const matrix = model._modelMatrix.getArray();
         modelStartPos.current = { x: matrix[12], y: matrix[13] };
       }
+
     }
   }, [canvasRef, modelInfo]);
 
