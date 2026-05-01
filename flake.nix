@@ -17,7 +17,9 @@
           # Use the NixOS-patched Electron instead of the pre-built npm binary.
           # pkgs.electron has correct RPATHs baked in, supports native Wayland
           # (ozone/Chromium), and needs no LD_LIBRARY_PATH workarounds.
-          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/libexec/electron";
+          # electron-vite reads ELECTRON_EXEC_PATH before falling back to
+          # node_modules/electron/dist/electron.
+          ELECTRON_EXEC_PATH = "${pkgs.electron}/libexec/electron/electron";
         };
       });
     };
