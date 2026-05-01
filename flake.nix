@@ -19,7 +19,7 @@
           # (ozone/Chromium), and needs no LD_LIBRARY_PATH workarounds.
           # electron-vite reads ELECTRON_EXEC_PATH before falling back to
           # node_modules/electron/dist/electron.
-          ELECTRON_EXEC_PATH = "${pkgs.electron}/libexec/electron/electron";
+          ELECTRON_EXEC_PATH = "${pkgs.electron}/bin/electron";
         };
       });
     };
