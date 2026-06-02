@@ -4,7 +4,8 @@
     "cancel": "Cancel",
     "settings": "Settings",
     "close": "Close",
-    "accept": "Accept"
+    "accept": "Accept",
+    "back": "Back"
   },
   "settings": {
     "tabs": {
@@ -149,6 +150,28 @@
     "raiseHand": "Raise Hand / Interrupt",
     "attachFile": "Attach File",
     "collapseInput": "Collapse Input",
-    "expandInput": "Expand Input"
+    "expandInput": "Expand Input",
+    "characterManager": "Character Manager"
+  },
+  "characterManager": {
+    "title": "Character Manager",
+    "characters": "characters",
+    "addNew": "New Character",
+    "newCharacter": "New Character",
+    "editCharacter": "Edit Character",
+    "name": "Display Name",
+    "uid": "Unique ID",
+    "characterName": "Character Name",
+    "humanName": "Human Name",
+    "avatar": "Avatar",
+    "live2dModel": "Live2D Model",
+    "personaPrompt": "Persona Prompt",
+    "personaPromptPlaceholder": "Describe your character's personality...",
+    "preview": "Preview Prompt",
+    "systemPromptPreview": "System Prompt Preview",
+    "validationError": "Name, UID, and Persona Prompt are required",
+    "created": "Character created successfully",
+    "updated": "Character updated successfully",
+    "deleted": "Character \"{{name}}\" deleted"
   }
 } 

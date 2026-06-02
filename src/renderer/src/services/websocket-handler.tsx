@@ -132,6 +132,13 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           setConfigFiles(message.configs);
         }
         break;
+      case 'character-config-detail':
+      case 'character-config-created':
+      case 'character-config-updated':
+      case 'character-config-deleted':
+      case 'system-prompt-preview':
+        console.log(`Received ${message.type}:`, message);
+        break;
       case 'config-switched':
         setAiState('idle');
         setSubtitleText(t('notification.characterLoaded'));

@@ -1,7 +1,7 @@
 /* eslint-disable react/require-default-props */
 import { Box, Button, Menu } from '@chakra-ui/react';
 import {
-  FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers
+  FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers, FiUserCheck
 } from 'react-icons/fi';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import BottomTab from './bottom-tab';
 import HistoryDrawer from './history-drawer';
 import { useSidebar } from '@/hooks/sidebar/use-sidebar';
 import GroupDrawer from './group-drawer';
+import CharacterManager from './character-manager';
 import { ModeType } from '@/context/mode-context';
 
 // Type definitions
@@ -101,6 +102,16 @@ const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode
           <FiSettings />
         </Button>
       </Tooltip>
+
+      <CharacterManager>
+        <Box as="span" display="inline-flex">
+          <Tooltip content={t('tooltip.characterManager')} showArrow openDelay={300}>
+            <Button>
+              <FiUserCheck />
+            </Button>
+          </Tooltip>
+        </Box>
+      </CharacterManager>
 
       <GroupDrawer>
         <Box as="span" display="inline-flex">
