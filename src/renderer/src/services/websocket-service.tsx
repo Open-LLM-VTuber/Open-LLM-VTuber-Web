@@ -71,6 +71,9 @@ export interface MessageEvent {
   success?: boolean;
   histories?: HistoryInfo[];
   configs?: ConfigFile[];
+  config?: any;
+  system_prompt?: string;
+  filename?: string;
   message?: string;
   members?: string[];
   is_owner?: boolean;

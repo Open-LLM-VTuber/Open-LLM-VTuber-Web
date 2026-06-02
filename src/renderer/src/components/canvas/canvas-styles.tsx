@@ -38,11 +38,15 @@ export const canvasStyles = {
   },
   subtitle: {
     container: {
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(0, 0, 0, 0.35)',
+      backdropFilter: 'blur(16px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+      border: '1px solid rgba(255, 255, 255, 0.12)',
       padding: '15px 30px',
-      borderRadius: '12px',
+      borderRadius: '16px',
       minWidth: '60%',
       maxWidth: '95%',
+      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.15)',
     },
     text: {
       color: 'white',

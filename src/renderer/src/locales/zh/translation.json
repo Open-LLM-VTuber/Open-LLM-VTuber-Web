@@ -4,7 +4,8 @@
     "cancel": "取消",
     "settings": "设置",
     "close": "关闭",
-    "accept": "接受"
+    "accept": "接受",
+    "back": "返回"
   },
   "settings": {
     "tabs": {
@@ -121,16 +122,53 @@
     "vadMisfire": "检测到语音但过于简短，请尝试提高音量或说得更久一些，或调整识别设置（降低语音识别阈值、降低负面语音阈值、减少验证帧数）"
   },
   "aiState": {
-    "idle": "空闲",
-    "thinking-speaking": "思考/说话中",
-    "interrupted": "已打断",
-    "loading": "加载中",
-    "listening": "聆听中",
-    "waiting": "等待中"
+    "idle": "AI 空闲",
+    "thinking-speaking": "AI 说话中",
+    "interrupted": "AI 已打断",
+    "loading": "AI 加载中",
+    "listening": "AI 聆听中",
+    "waiting": "AI 等待中"
   },
   "wsStatus": {
-    "connected": "已连接",
-    "connecting": "连接中",
-    "clickToReconnect": "点击重新连接"
+    "connected": "服务器已连接",
+    "connecting": "服务器连接中...",
+    "clickToReconnect": "连接断开，点击重连"
+  },
+  "tooltip": {
+    "settings": "设置",
+    "group": "群组管理",
+    "chatHistory": "聊天历史",
+    "newChat": "新建对话",
+    "changeMode": "切换模式",
+    "collapseSidebar": "收起侧栏",
+    "expandSidebar": "展开侧栏",
+    "micOn": "麦克风已开启（点击关闭）",
+    "micOff": "麦克风已关闭（点击开启）",
+    "raiseHand": "举手 / 打断",
+    "attachFile": "添加附件",
+    "collapseInput": "收起输入栏",
+    "expandInput": "展开输入栏",
+    "characterManager": "角色管理"
+  },
+  "characterManager": {
+    "title": "角色管理",
+    "characters": "个角色",
+    "addNew": "新建角色",
+    "newCharacter": "新建角色",
+    "editCharacter": "编辑角色",
+    "name": "显示名称",
+    "uid": "唯一标识",
+    "characterName": "角色名称",
+    "humanName": "用户名称",
+    "avatar": "头像",
+    "live2dModel": "Live2D 模型",
+    "personaPrompt": "人设提示词",
+    "personaPromptPlaceholder": "描述你的角色性格...",
+    "preview": "预览Prompt",
+    "systemPromptPreview": "System Prompt 预览",
+    "validationError": "名称、唯一标识和人设提示词不能为空",
+    "created": "角色创建成功",
+    "updated": "角色更新成功",
+    "deleted": "角色 \"{{name}}\" 已删除"
   }
 } 

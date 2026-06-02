@@ -239,9 +239,8 @@ export const sidebarStyles = {
 
   cameraPanel: {
     container: {
-      width: '97%',
+      width: '100%',
       overflow: 'hidden',
-      px: 4,
       minH: '240px',
     },
     header: {
@@ -273,9 +272,8 @@ export const sidebarStyles = {
 
   screenPanel: {
     container: {
-      width: '97%',
+      width: '100%',
       overflow: 'hidden',
-      px: 4,
       minH: '240px',
     },
     header: {
@@ -307,9 +305,8 @@ export const sidebarStyles = {
   // Add Browser Panel Styles
   browserPanel: {
     container: {
-      width: '97%',
+      width: '100%',
       overflow: 'hidden',
-      px: 4,
       minH: '240px',
     },
     header: {
@@ -343,7 +340,7 @@ export const sidebarStyles = {
 
   bottomTab: {
     container: {
-      width: '97%',
+      width: '100%',
       px: 4,
       position: 'relative' as const,
       zIndex: 0,
@@ -519,8 +516,8 @@ export const chatPanelStyles = css`
   .cs-main-container {
     border: none !important;
     background: transparent !important;
-    width: calc(100% - 24px) !important;
-    margin-left: 0 !important;
+    width: calc(100% - 48px) !important;
+    margin: 0 auto !important;
   }
 
   .cs-message__sender {
