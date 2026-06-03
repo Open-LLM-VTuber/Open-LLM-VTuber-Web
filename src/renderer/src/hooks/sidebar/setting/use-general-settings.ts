@@ -73,7 +73,12 @@ export const useGeneralSettings = ({
   onSave,
   onCancel,
 }: UseGeneralSettingsProps) => {
-  const { showSubtitle, setShowSubtitle } = useSubtitle();
+  const {
+    showSubtitle,
+    setShowSubtitle,
+    subtitleConfig,
+    setSubtitleConfig,
+  } = useSubtitle();
   const { setUseCameraBackground } = bgUrlContext || {};
   const { startBackgroundCamera, stopBackgroundCamera } = useCamera();
   const { configFiles, getFilenameByName } = useConfig();
@@ -256,5 +261,7 @@ export const useGeneralSettings = ({
     handleCharacterPresetChange,
     showSubtitle,
     setShowSubtitle,
+    subtitleConfig,
+    setSubtitleConfig,
   };
 };
