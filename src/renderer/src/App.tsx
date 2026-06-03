@@ -29,6 +29,7 @@ import Background from "./components/canvas/background";
 import WebSocketStatus from "./components/canvas/ws-status";
 import Subtitle from "./components/canvas/subtitle";
 import { ModeProvider, useMode } from "./context/mode-context";
+import { useDraggable } from "@/hooks/electron/use-draggable";
 
 function AppContent(): JSX.Element {
   const [showSidebar, setShowSidebar] = useState(true);
@@ -36,6 +37,13 @@ function AppContent(): JSX.Element {
   const { mode } = useMode();
   const isElectron = window.api !== undefined;
   const live2dContainerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    elementRef: subtitleRef,
+    handleMouseDown: handleSubtitleMouseDown,
+    handleMouseEnter: handleSubtitleMouseEnter,
+    handleMouseLeave: handleSubtitleMouseLeave,
+  } = useDraggable({ componentId: 'subtitle' });
 
   useEffect(() => {
     const handleResize = () => {
@@ -131,8 +139,15 @@ function AppContent(): JSX.Element {
                 transform="translateX(-50%)"
                 zIndex={10}
                 width="60%"
+                display="flex"
+                justifyContent="center"
               >
-                <Subtitle />
+                <Subtitle
+                  ref={subtitleRef}
+                  onMouseDown={handleSubtitleMouseDown}
+                  onMouseEnter={handleSubtitleMouseEnter}
+                  onMouseLeave={handleSubtitleMouseLeave}
+                />
               </Box>
               <Box
                 {...layoutStyles.footer}

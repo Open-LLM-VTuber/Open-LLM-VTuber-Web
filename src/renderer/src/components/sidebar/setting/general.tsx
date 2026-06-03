@@ -61,6 +61,8 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
     handleCharacterPresetChange,
     showSubtitle,
     setShowSubtitle,
+    subtitleConfig,
+    setSubtitleConfig,
   } = useGeneralSettings({
     bgUrlContext,
     confName,
@@ -98,6 +100,35 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
         checked={showSubtitle}
         onChange={setShowSubtitle}
       />
+
+      {showSubtitle && (
+        <>
+          <InputField
+            label="Subtitle Font Size"
+            value={subtitleConfig.fontSize}
+            onChange={(value) => setSubtitleConfig({ fontSize: value as string })}
+            placeholder="e.g. 1.5rem, 24px"
+          />
+          <InputField
+            label="Subtitle Color"
+            value={subtitleConfig.color}
+            onChange={(value) => setSubtitleConfig({ color: value as string })}
+            placeholder="e.g. white, #ffffff"
+          />
+          <InputField
+            label="Subtitle Background Color"
+            value={subtitleConfig.backgroundColor}
+            onChange={(value) => setSubtitleConfig({ backgroundColor: value as string })}
+            placeholder="e.g. rgba(0, 0, 0, 0.7)"
+          />
+          <InputField
+            label="Subtitle Font Family"
+            value={subtitleConfig.fontFamily}
+            onChange={(value) => setSubtitleConfig({ fontFamily: value as string })}
+            placeholder="e.g. Arial, sans-serif"
+          />
+        </>
+      )}
 
       {!settings.useCameraBackground && (
         <>
