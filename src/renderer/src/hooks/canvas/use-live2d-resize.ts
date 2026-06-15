@@ -13,6 +13,7 @@ const MAX_SCALE = 5.0;
 const EASING_FACTOR = 0.3; // Controls animation smoothness
 const WHEEL_SCALE_STEP = 0.03; // Scale change per wheel tick
 const DEFAULT_SCALE = 1.0; // Default scale if not specified
+const SCALE_EPSILON = 0.0005; // Convergence threshold for animation loop
 
 interface UseLive2DResizeProps {
   containerRef: RefObject<HTMLDivElement>;
@@ -36,6 +37,23 @@ export const applyScale = (scale: number) => {
     model._modelMatrix.scale(scale, scale);
   } catch (error) {
     console.debug('Model not ready for scaling yet');
+  }
+};
+
+/**
+ * Reads the current model matrix scale (X axis).
+ * Returns undefined if the model isn't ready.
+ */
+const readModelScale = (): number | undefined => {
+  try {
+    const manager = LAppLive2DManager.getInstance();
+    if (!manager) return undefined;
+    const model = manager.getModel(0);
+    if (!model) return undefined;
+    // @ts-ignore
+    return model._modelMatrix.getScaleX();
+  } catch {
+    return undefined;
   }
 };
 
@@ -102,6 +120,13 @@ export const useLive2DResize = ({
     const currentScale = lastScaleRef.current;
     const diff = clampedTargetScale - currentScale;
 
+    if (Math.abs(diff) < SCALE_EPSILON) {
+      applyScale(clampedTargetScale);
+      lastScaleRef.current = clampedTargetScale;
+      isAnimatingRef.current = false;
+      return;
+    }
+
     const newScale = currentScale + diff * EASING_FACTOR;
     applyScale(newScale);
     lastScaleRef.current = newScale;
@@ -116,6 +141,15 @@ export const useLive2DResize = ({
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (!modelInfo?.scrollToResize) return;
+
+    // Sync from actual model scale before computing new target to prevent
+    // jumps when refs drifted (e.g. after model reload while animation was stopped).
+    if (!isAnimatingRef.current) {
+      const actual = readModelScale();
+      if (actual !== undefined && actual > 0) {
+        lastScaleRef.current = actual;
+      }
+    }
 
     const direction = e.deltaY > 0 ? -1 : 1;
     const increment = WHEEL_SCALE_STEP * direction;
@@ -203,6 +237,16 @@ export const useLive2DResize = ({
         delegate.onResize();
       } else {
         console.warn('[Resize] LAppDelegate instance not found.');
+      }
+
+      // Sync scale refs with the actual model matrix to prevent desync
+      // after model reloads or external scale changes (e.g. onUpdate setWidth).
+      if (!isAnimatingRef.current) {
+        const actualScale = readModelScale();
+        if (actualScale !== undefined && actualScale > 0) {
+          lastScaleRef.current = actualScale;
+          targetScaleRef.current = actualScale;
+        }
       }
 
       isResizingRef.current = false;

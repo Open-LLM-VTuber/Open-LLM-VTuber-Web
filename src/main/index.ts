@@ -4,6 +4,15 @@ import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { WindowManager } from "./window-manager";
 import { MenuManager } from "./menu-manager";
 
+// Fix GBM buffer object creation failures with DRM format modifiers on Wayland.
+// These switches must be set before app.whenReady().
+if (process.platform === 'linux' && (process.env.WAYLAND_DISPLAY || process.env.XDG_SESSION_TYPE === 'wayland')) {
+  app.commandLine.appendSwitch('disable-features', 'UseChromeOSDirectVideoDecoder,VaapiVideoDecoder');
+  // Disable DMA-buf zero-copy scanout path that triggers GBM BO modifier allocation failures
+  // on some GPU/driver combinations when Electron resizes GPU-backed surfaces on Wayland.
+  app.commandLine.appendSwitch('disable-zero-copy');
+}
+
 let windowManager: WindowManager;
 let menuManager: MenuManager;
 let isQuitting = false;
@@ -71,6 +80,7 @@ function setupIPC(): void {
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     return sources[0].id;
   });
+
 }
 
 app.whenReady().then(() => {
