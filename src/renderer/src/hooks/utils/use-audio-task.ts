@@ -225,8 +225,8 @@ export const useAudioTask = () => {
 
     audioManager.startStream(sampleRate, model).then(() => {
       // Subscribe to binary frames for this stream
-      binarySubRef.current = wsService.onBinary(async (blob: Blob) => {
-        await audioManager.feedStream(blob);
+      binarySubRef.current = wsService.onBinary((data: ArrayBuffer) => {
+        audioManager.feedStream(data);
       });
     }).catch((err) => {
       console.error('Failed to start audio stream:', err);

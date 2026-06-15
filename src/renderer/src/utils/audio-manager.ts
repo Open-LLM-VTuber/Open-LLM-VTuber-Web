@@ -25,15 +25,13 @@ class AudioManager {
     }
 
     if (this.currentAudio) {
-      console.log('[AudioManager] Stopping current audio and lip sync');
       const audio = this.currentAudio;
-
       audio.pause();
       audio.src = '';
       audio.load();
 
       const model = this.currentModel;
-      if (model && model._wavFileHandler) {
+      if (model?._wavFileHandler) {
         try {
           model._wavFileHandler.releasePcmData();
           model._wavFileHandler._lastRms = 0.0;
@@ -82,21 +80,20 @@ class AudioManager {
       }
     };
 
-    // Monkey-patch wavFileHandler for streaming lip sync
     if (model?._wavFileHandler) {
       this.originalWavUpdate = model._wavFileHandler.update.bind(model._wavFileHandler);
       this.originalWavGetRms = model._wavFileHandler.getRms.bind(model._wavFileHandler);
-
-      model._wavFileHandler.update = () => this.streaming;
-      model._wavFileHandler.getRms = () => Math.min(2.0, this.currentRms * 1.5 * 2.0);
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const self = this;
+      model._wavFileHandler.update = () => self.streaming;
+      model._wavFileHandler.getRms = () => Math.min(2.0, self.currentRms * 1.5 * 2.0);
     }
   }
 
-  async feedStream(blob: Blob): Promise<void> {
+  feedStream(data: ArrayBuffer): void {
     if (!this.workletNode) return;
 
-    const arrayBuffer = await blob.arrayBuffer();
-    const int16 = new Int16Array(arrayBuffer);
+    const int16 = new Int16Array(data);
     const float32 = new Float32Array(int16.length);
     for (let i = 0; i < int16.length; i++) {
       float32[i] = int16[i] / 32768.0;
@@ -131,7 +128,6 @@ class AudioManager {
       this.audioContext = null;
     }
 
-    // Restore original wavFileHandler methods
     const model = this.currentModel;
     if (model?._wavFileHandler) {
       if (this.originalWavUpdate) {

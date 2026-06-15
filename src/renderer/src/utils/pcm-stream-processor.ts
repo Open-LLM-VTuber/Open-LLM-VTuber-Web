@@ -1,4 +1,5 @@
 const RING_BUFFER_SIZE = 24000 * 30; // 30s at 24kHz
+const PRE_BUFFER_SAMPLES = 4800; // 200ms at 24kHz — buffer before playback starts
 const RMS_REPORT_SAMPLES = 2400; // Report RMS every ~100ms at 24kHz
 
 const processorCode = `
@@ -9,6 +10,7 @@ class PCMStreamProcessor extends AudioWorkletProcessor {
     this.writePos = 0;
     this.readPos = 0;
     this.ended = false;
+    this.prebuffered = false;
     this.rmsAccum = 0;
     this.rmsSamples = 0;
 
@@ -32,6 +34,16 @@ class PCMStreamProcessor extends AudioWorkletProcessor {
     const needed = output.length;
     const bufLen = this.buffer.length;
 
+    // Pre-buffer: wait until we have enough data (or stream ended)
+    if (!this.prebuffered) {
+      if (available >= ${PRE_BUFFER_SAMPLES} || (this.ended && available > 0)) {
+        this.prebuffered = true;
+      } else {
+        output.fill(0);
+        return !this.ended;
+      }
+    }
+
     if (available >= needed) {
       for (let i = 0; i < needed; i++) {
         const sample = this.buffer[(this.readPos + i) % bufLen];
@@ -50,9 +62,14 @@ class PCMStreamProcessor extends AudioWorkletProcessor {
       return true;
     }
 
+    // Underrun or end
     output.fill(0);
     const done = this.ended && available < needed;
     if (done) {
+      if (this.rmsSamples > 0) {
+        const rms = Math.sqrt(this.rmsAccum / this.rmsSamples);
+        this.port.postMessage({ type: 'rms', value: rms });
+      }
       this.port.postMessage({ type: 'ended' });
     }
     return !done;

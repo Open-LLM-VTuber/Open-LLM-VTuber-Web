@@ -112,7 +112,7 @@ class WebSocketService {
 
   private messageSubject = new Subject<MessageEvent>();
 
-  private binarySubject = new Subject<Blob>();
+  private binarySubject = new Subject<ArrayBuffer>();
 
   private stateSubject = new Subject<'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED'>();
 
@@ -148,6 +148,7 @@ class WebSocketService {
 
     try {
       this.ws = new WebSocket(url);
+      this.ws.binaryType = 'arraybuffer';
       this.currentState = 'CONNECTING';
       this.stateSubject.next('CONNECTING');
 
@@ -158,7 +159,7 @@ class WebSocketService {
       };
 
       this.ws.onmessage = (event) => {
-        if (event.data instanceof Blob) {
+        if (event.data instanceof ArrayBuffer) {
           this.binarySubject.next(event.data);
           return;
         }
@@ -208,7 +209,7 @@ class WebSocketService {
     return this.messageSubject.subscribe(callback);
   }
 
-  onBinary(callback: (data: Blob) => void) {
+  onBinary(callback: (data: ArrayBuffer) => void) {
     return this.binarySubject.subscribe(callback);
   }
 
