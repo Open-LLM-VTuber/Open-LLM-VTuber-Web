@@ -10,7 +10,7 @@ import { audioTaskQueue } from '@/utils/task-queue';
 import { audioManager } from '@/utils/audio-manager';
 import { toaster } from '@/components/ui/toaster';
 import { useWebSocket } from '@/context/websocket-context';
-import { DisplayText, wsService } from '@/services/websocket-service';
+import { DisplayText } from '@/services/websocket-service';
 import { useLive2DExpression } from '@/hooks/canvas/use-live2d-expression';
 import * as LAppDefine from '../../../WebSDK/src/lappdefine';
 
@@ -53,8 +53,7 @@ export const useAudioTask = () => {
     appendAIMessage,
   };
 
-  // Track binary subscription for streaming
-  const binarySubRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const streamResolveRef = useRef<(() => void) | null>(null);
 
   const stopCurrentAudioAndLipSync = useCallback(() => {
     audioManager.stopCurrentAudioAndLipSync();
@@ -223,35 +222,22 @@ export const useAudioTask = () => {
       return;
     }
 
-    audioManager.startStream(sampleRate, model).then(() => {
-      // Subscribe to binary frames for this stream
-      binarySubRef.current = wsService.onBinary((data: ArrayBuffer) => {
-        audioManager.feedStream(data);
-      });
-    }).catch((err) => {
+    streamResolveRef.current = resolve;
+    audioManager.startStream(sampleRate, model).catch((err) => {
       console.error('Failed to start audio stream:', err);
+      streamResolveRef.current = null;
       resolve();
     });
-
-    // Store resolve for when stream ends
-    (audioManager as any)._taskResolve = resolve;
   });
 
   /**
    * Called when audio-stream-end is received
    */
   const endStreamingAudio = useCallback(() => {
-    // Unsubscribe from binary frames
-    if (binarySubRef.current) {
-      binarySubRef.current.unsubscribe();
-      binarySubRef.current = null;
-    }
-
     audioManager.endStream().then(() => {
-      const resolve = (audioManager as any)._taskResolve;
-      if (resolve) {
-        resolve();
-        (audioManager as any)._taskResolve = null;
+      if (streamResolveRef.current) {
+        streamResolveRef.current();
+        streamResolveRef.current = null;
       }
     });
   }, []);

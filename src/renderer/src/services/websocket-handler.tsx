@@ -10,6 +10,7 @@ import {
 import { ModelInfo, useLive2DConfig } from '@/context/live2d-config-context';
 import { useSubtitle } from '@/context/subtitle-context';
 import { audioTaskQueue } from '@/utils/task-queue';
+import { audioManager } from '@/utils/audio-manager';
 import { useAudioTask } from '@/components/canvas/live2d';
 import { useBgUrl } from '@/context/bgurl-context';
 import { useConfig } from '@/context/character-config-context';
@@ -318,6 +319,15 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       messageSubscription.unsubscribe();
     };
   }, [wsUrl, handleWebSocketMessage]);
+
+  // Permanent binary subscription — feeds PCM frames to audioManager
+  // regardless of which streaming task is active
+  useEffect(() => {
+    const subscription = wsService.onBinary((data: ArrayBuffer) => {
+      audioManager.feedStream(data);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const webSocketContextValue = useMemo(() => ({
     sendMessage: wsService.sendMessage.bind(wsService),
