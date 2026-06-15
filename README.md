@@ -8,13 +8,36 @@ An Electron application with React and TypeScript
 
 ## Project Setup
 
-### Install
+### Using Nix (Recommended for NixOS users)
+
+With [direnv](https://direnv.net/) and [nix-direnv](https://github.com/nix-community/nix-direnv):
+
+```bash
+direnv allow   # one-time, auto-loads the flake on every cd
+npm install
+npm run dev
+```
+
+Without direnv:
+
+```bash
+nix develop
+npm install
+npm run dev
+```
+
+The flake provides a NixOS-patched Electron binary via `ELECTRON_OVERRIDE_DIST_PATH`,
+so no `LD_LIBRARY_PATH` exports are needed.
+
+### Manual Setup
+
+#### Install
 
 ```bash
 $ npm install
 ```
 
-### Development
+#### Development
 
 ```bash
 $ npm run dev
