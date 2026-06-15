@@ -31,7 +31,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { setModelInfo } = useLive2DConfig();
   const { setSubtitleText } = useSubtitle();
   const { clearResponse, setForceNewMessage, appendHumanMessage, appendOrUpdateToolCallMessage } = useChatHistory();
-  const { addAudioTask } = useAudioTask();
+  const { addAudioTask, addStreamingAudioTask, endStreamingAudio } = useAudioTask();
   const bgUrlContext = useBgUrl();
   const { confUid, setConfName, setConfUid, setConfigFiles } = useConfig();
   const [pendingModelInfo, setPendingModelInfo] = useState<ModelInfo | undefined>(undefined);
@@ -259,6 +259,21 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       case 'force-new-message':
         setForceNewMessage(true);
         break;
+      case 'audio-stream-start':
+        if (aiState === 'interrupted' || aiState === 'listening') {
+          console.log('Audio stream intercepted. Sentence:', message.display_text?.text);
+        } else {
+          addStreamingAudioTask({
+            displayText: message.display_text || null,
+            actions: message.actions || null,
+            sampleRate: (message as any).sample_rate || 24000,
+            forwarded: message.forwarded || false,
+          });
+        }
+        break;
+      case 'audio-stream-end':
+        endStreamingAudio();
+        break;
       case 'interrupt-signal':
         // Handle forwarded interrupt
         interrupt(false); // do not send interrupt signal to server
@@ -289,7 +304,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       default:
         console.warn('Unknown message type:', message.type);
     }
-  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, handleControlMessage, appendOrUpdateToolCallMessage, interrupt, setBrowserViewData, t]);
+  }, [aiState, addAudioTask, addStreamingAudioTask, endStreamingAudio, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, handleControlMessage, appendOrUpdateToolCallMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
     wsService.connect(wsUrl);

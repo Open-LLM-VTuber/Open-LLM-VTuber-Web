@@ -1,65 +1,54 @@
-/**
- * Global audio manager for handling audio playback and interruption
- * This ensures all components share the same audio reference
- */
+import { getProcessorBlobUrl } from './pcm-stream-processor';
+
 class AudioManager {
   private currentAudio: HTMLAudioElement | null = null;
   private currentModel: any | null = null;
 
-  /**
-   * Set the current playing audio
-   */
+  // Streaming state
+  private audioContext: AudioContext | null = null;
+  private workletNode: AudioWorkletNode | null = null;
+  private streaming = false;
+  private currentRms = 0;
+  private streamEndResolve: (() => void) | null = null;
+  private originalWavUpdate: ((dt: number) => boolean) | null = null;
+  private originalWavGetRms: (() => number) | null = null;
+
   setCurrentAudio(audio: HTMLAudioElement, model: any) {
     this.currentAudio = audio;
     this.currentModel = model;
   }
 
-  /**
-   * Stop current audio playback and lip sync
-   */
   stopCurrentAudioAndLipSync() {
+    if (this.streaming) {
+      this.stopStream();
+      return;
+    }
+
     if (this.currentAudio) {
       console.log('[AudioManager] Stopping current audio and lip sync');
       const audio = this.currentAudio;
-      
-      // Stop audio playback
+
       audio.pause();
       audio.src = '';
       audio.load();
 
-      // Stop Live2D lip sync
       const model = this.currentModel;
       if (model && model._wavFileHandler) {
         try {
-          // Release PCM data to stop lip sync calculation in update()
           model._wavFileHandler.releasePcmData();
-          console.log('[AudioManager] Called _wavFileHandler.releasePcmData()');
-
-          // Additional reset of state variables as fallback
           model._wavFileHandler._lastRms = 0.0;
           model._wavFileHandler._sampleOffset = 0;
           model._wavFileHandler._userTimeSeconds = 0.0;
-          console.log('[AudioManager] Also reset _lastRms, _sampleOffset, _userTimeSeconds as fallback');
         } catch (e) {
-          console.error('[AudioManager] Error stopping/resetting wavFileHandler:', e);
+          console.error('[AudioManager] Error stopping wavFileHandler:', e);
         }
-      } else if (model) {
-        console.warn('[AudioManager] Current model does not have _wavFileHandler to stop/reset.');
-      } else {
-        console.log('[AudioManager] No associated model found to stop lip sync.');
       }
 
-      // Clear references
       this.currentAudio = null;
       this.currentModel = null;
-    } else {
-      console.log('[AudioManager] No current audio playing to stop.');
     }
   }
 
-  /**
-   * Clear the current audio reference (called when audio ends naturally)
-   */
   clearCurrentAudio(audio: HTMLAudioElement) {
     if (this.currentAudio === audio) {
       this.currentAudio = null;
@@ -67,13 +56,108 @@ class AudioManager {
     }
   }
 
-  /**
-   * Check if there's currently playing audio
-   */
   hasCurrentAudio(): boolean {
-    return this.currentAudio !== null;
+    return this.currentAudio !== null || this.streaming;
+  }
+
+  // --- Streaming API ---
+
+  async startStream(sampleRate: number, model: any): Promise<void> {
+    this.currentModel = model;
+    this.streaming = true;
+    this.currentRms = 0;
+
+    this.audioContext = new AudioContext({ sampleRate });
+    await this.audioContext.audioWorklet.addModule(getProcessorBlobUrl());
+    this.workletNode = new AudioWorkletNode(this.audioContext, 'pcm-stream-processor', {
+      outputChannelCount: [1],
+    });
+    this.workletNode.connect(this.audioContext.destination);
+
+    this.workletNode.port.onmessage = (e) => {
+      if (e.data.type === 'rms') {
+        this.currentRms = e.data.value;
+      } else if (e.data.type === 'ended') {
+        this.cleanupStream();
+      }
+    };
+
+    // Monkey-patch wavFileHandler for streaming lip sync
+    if (model?._wavFileHandler) {
+      this.originalWavUpdate = model._wavFileHandler.update.bind(model._wavFileHandler);
+      this.originalWavGetRms = model._wavFileHandler.getRms.bind(model._wavFileHandler);
+
+      model._wavFileHandler.update = () => this.streaming;
+      model._wavFileHandler.getRms = () => Math.min(2.0, this.currentRms * 1.5 * 2.0);
+    }
+  }
+
+  async feedStream(blob: Blob): Promise<void> {
+    if (!this.workletNode) return;
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const int16 = new Int16Array(arrayBuffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768.0;
+    }
+
+    this.workletNode.port.postMessage({ type: 'chunk', pcm: float32 }, [float32.buffer]);
+  }
+
+  endStream(): Promise<void> {
+    if (!this.workletNode) {
+      this.cleanupStream();
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      this.streamEndResolve = resolve;
+      this.workletNode!.port.postMessage({ type: 'end' });
+    });
+  }
+
+  stopStream(): void {
+    this.cleanupStream();
+  }
+
+  private cleanupStream(): void {
+    if (this.workletNode) {
+      this.workletNode.disconnect();
+      this.workletNode = null;
+    }
+    if (this.audioContext) {
+      this.audioContext.close().catch(() => {});
+      this.audioContext = null;
+    }
+
+    // Restore original wavFileHandler methods
+    const model = this.currentModel;
+    if (model?._wavFileHandler) {
+      if (this.originalWavUpdate) {
+        model._wavFileHandler.update = this.originalWavUpdate;
+        this.originalWavUpdate = null;
+      }
+      if (this.originalWavGetRms) {
+        model._wavFileHandler.getRms = this.originalWavGetRms;
+        this.originalWavGetRms = null;
+      }
+      model._wavFileHandler._lastRms = 0.0;
+    }
+
+    this.streaming = false;
+    this.currentRms = 0;
+    this.currentModel = null;
+
+    if (this.streamEndResolve) {
+      this.streamEndResolve();
+      this.streamEndResolve = null;
+    }
+  }
+
+  isStreaming(): boolean {
+    return this.streaming;
   }
 }
 
-// Export singleton instance
 export const audioManager = new AudioManager();
