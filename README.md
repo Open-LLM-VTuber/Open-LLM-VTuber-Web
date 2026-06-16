@@ -26,7 +26,7 @@ npm install
 npm run dev
 ```
 
-The flake provides a NixOS-patched Electron binary via `ELECTRON_OVERRIDE_DIST_PATH`,
+The flake provides a NixOS-patched Electron binary via `ELECTRON_EXEC_PATH`,
 so no `LD_LIBRARY_PATH` exports are needed.
 
 ### Manual Setup
