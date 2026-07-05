@@ -59,6 +59,9 @@ export interface MessageEvent {
   audio?: string;
   volumes?: number[];
   slice_length?: number;
+  stream_id?: string;
+  sample_rate?: number;
+  chunk?: string;
   files?: BackgroundFile[];
   actions?: Actions;
   text?: string;

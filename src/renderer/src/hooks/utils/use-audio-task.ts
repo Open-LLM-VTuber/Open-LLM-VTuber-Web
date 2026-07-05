@@ -8,6 +8,7 @@ import { useSubtitle } from '@/context/subtitle-context';
 import { useChatHistory } from '@/context/chat-history-context';
 import { audioTaskQueue } from '@/utils/task-queue';
 import { audioManager } from '@/utils/audio-manager';
+import { streamAudioPlayer } from '@/utils/stream-audio-player';
 import { toaster } from '@/components/ui/toaster';
 import { useWebSocket } from '@/context/websocket-context';
 import { DisplayText } from '@/services/websocket-service';
@@ -24,6 +25,13 @@ interface AudioTaskOptions {
   displayText?: DisplayText | null
   expressions?: string[] | number[] | null
   speaker_uid?: string
+  forwarded?: boolean
+}
+
+interface StreamAudioTaskOptions {
+  streamId: string
+  displayText?: DisplayText | null
+  expressions?: string[] | number[] | null
   forwarded?: boolean
 }
 
@@ -226,6 +234,69 @@ export const useAudioTask = () => {
     }
   });
 
+  /**
+   * Handle streamed audio playback (chunked PCM via streamAudioPlayer)
+   * with the same display/expression handling as file-based playback.
+   * Lip sync comes from the stream player's analyser (see lappmodel.ts).
+   */
+  const handleStreamAudioPlayback = async (options: StreamAudioTaskOptions): Promise<void> => {
+    const {
+      aiState: currentAiState,
+      setSubtitleText: updateSubtitle,
+      appendResponse: appendText,
+      appendAIMessage: appendAI,
+    } = stateRef.current;
+
+    if (currentAiState === 'interrupted') {
+      console.warn('Stream audio playback blocked by interruption state.');
+      streamAudioPlayer.dropStream(options.streamId);
+      return;
+    }
+
+    const { streamId, displayText, expressions, forwarded } = options;
+
+    if (displayText) {
+      appendText(displayText.text);
+      appendAI(displayText.text, displayText.name, displayText.avatar);
+      updateSubtitle(displayText.text);
+      if (!forwarded) {
+        sendMessage({
+          type: "audio-play-start",
+          display_text: displayText,
+          forwarded: true,
+        });
+      }
+    }
+
+    try {
+      const live2dManager = (window as any).getLive2DManager?.();
+      const model = live2dManager?.getModel(0);
+
+      const lappAdapter = (window as any).getLAppAdapter?.();
+      if (lappAdapter && expressions?.[0] !== undefined) {
+        setExpression(
+          expressions[0],
+          lappAdapter,
+          `Set expression to: ${expressions[0]}`,
+        );
+      }
+
+      if (model && LAppDefine && LAppDefine.PriorityNormal) {
+        model.startRandomMotion("Talk", LAppDefine.PriorityNormal);
+      }
+
+      await streamAudioPlayer.play(streamId);
+      console.log('Stream audio playback completed');
+    } catch (error) {
+      console.error('Stream audio playback error:', error);
+      toaster.create({
+        title: `${t('error.audioPlayback')}: ${error}`,
+        type: "error",
+        duration: 2000,
+      });
+    }
+  };
+
   // Handle backend synthesis completion
   useEffect(() => {
     let isMounted = true;
@@ -261,8 +332,26 @@ export const useAudioTask = () => {
     audioTaskQueue.addTask(() => handleAudioPlayback(options));
   };
 
+  /**
+   * Add a streamed audio task to the queue. Rides the same queue as
+   * file-based tasks, so sentence order is preserved across both kinds.
+   */
+  const addStreamAudioTask = async (options: StreamAudioTaskOptions) => {
+    const { aiState: currentState } = stateRef.current;
+
+    if (currentState === 'interrupted') {
+      console.log('Skipping stream audio task due to interrupted state');
+      streamAudioPlayer.dropStream(options.streamId);
+      return;
+    }
+
+    console.log(`Adding stream audio task ${options.displayText?.text} to queue`);
+    audioTaskQueue.addTask(() => handleStreamAudioPlayback(options));
+  };
+
   return {
     addAudioTask,
+    addStreamAudioTask,
     appendResponse,
     stopCurrentAudioAndLipSync,
   };

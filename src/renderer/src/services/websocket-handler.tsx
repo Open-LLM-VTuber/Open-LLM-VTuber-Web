@@ -10,6 +10,7 @@ import {
 import { ModelInfo, useLive2DConfig } from '@/context/live2d-config-context';
 import { useSubtitle } from '@/context/subtitle-context';
 import { audioTaskQueue } from '@/utils/task-queue';
+import { streamAudioPlayer } from '@/utils/stream-audio-player';
 import { useAudioTask } from '@/components/canvas/live2d';
 import { useBgUrl } from '@/context/bgurl-context';
 import { useConfig } from '@/context/character-config-context';
@@ -31,7 +32,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { setModelInfo } = useLive2DConfig();
   const { setSubtitleText } = useSubtitle();
   const { clearResponse, setForceNewMessage, appendHumanMessage, appendOrUpdateToolCallMessage } = useChatHistory();
-  const { addAudioTask } = useAudioTask();
+  const { addAudioTask, addStreamAudioTask } = useAudioTask();
   const bgUrlContext = useBgUrl();
   const { confUid, setConfName, setConfUid, setConfigFiles } = useConfig();
   const [pendingModelInfo, setPendingModelInfo] = useState<ModelInfo | undefined>(undefined);
@@ -69,6 +70,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       case 'conversation-chain-start':
         setAiState('thinking-speaking');
         audioTaskQueue.clearQueue();
+        streamAudioPlayer.stopAll();
         clearResponse();
         break;
       case 'conversation-chain-end':
@@ -165,6 +167,31 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
             expressions: message.actions?.expressions || null,
             forwarded: message.forwarded || false,
           });
+        }
+        break;
+      case 'audio-stream-start':
+        if (!message.stream_id) break;
+        if (aiState === 'interrupted' || aiState === 'listening') {
+          console.log('Stream playback intercepted. Sentence:', message.display_text?.text);
+          streamAudioPlayer.dropStream(message.stream_id);
+        } else {
+          streamAudioPlayer.openStream(message.stream_id, message.sample_rate || 24000);
+          addStreamAudioTask({
+            streamId: message.stream_id,
+            displayText: message.display_text || null,
+            expressions: message.actions?.expressions || null,
+            forwarded: message.forwarded || false,
+          });
+        }
+        break;
+      case 'audio-stream-chunk':
+        if (message.stream_id && message.chunk) {
+          streamAudioPlayer.pushChunk(message.stream_id, message.chunk);
+        }
+        break;
+      case 'audio-stream-end':
+        if (message.stream_id) {
+          streamAudioPlayer.endStream(message.stream_id);
         }
         break;
       case 'history-data':
