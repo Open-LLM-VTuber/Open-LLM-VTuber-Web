@@ -25,7 +25,23 @@ interface StreamState {
 // Matches the lipSyncScale boost applied to file-based playback in
 // use-audio-task.ts so both paths drive the mouth equally hard.
 const LIP_SYNC_SCALE = 2.0;
-const SCHEDULE_LEAD_S = 0.05;
+// Minimal scheduling headroom when (re)anchoring to the context clock.
+// Only applied when we're genuinely behind — in-time chunks butt-join
+// sample-exactly at nextStartTime with no re-anchor.
+const MIN_LEAD_S = 0.02;
+// Jitter buffer: seconds of audio to accumulate before starting playback,
+// and before resuming after an underrun. TTS generation can run slower
+// than realtime early in a stream (GPU prefill/warmup), so resuming with
+// too little buffered just causes another underrun a chunk later. The
+// refill target doubles per underrun within a stream (capped) so a
+// persistently slow stream degrades into a few clean pauses instead of
+// constant crackle.
+const INITIAL_BUFFER_S = 0.35;
+const REFILL_BUFFER_S = 0.6;
+const MAX_REFILL_BUFFER_S = 2.4;
+// Never wait longer than this for the buffer to fill — play what we have.
+const INITIAL_WAIT_MS = 700;
+const REFILL_WAIT_MS = 1500;
 
 class StreamAudioPlayer {
   private ctx: AudioContext | null = null;
@@ -121,6 +137,37 @@ class StreamAudioPlayer {
     }
   }
 
+  /** Seconds of audio currently buffered but not yet scheduled. */
+  private static pendingDuration(state: StreamState): number {
+    let samples = 0;
+    for (let i = 0; i < state.pending.length; i += 1) samples += state.pending[i].length;
+    return samples / state.sampleRate;
+  }
+
+  /**
+   * Wait until at least `targetSeconds` of audio is buffered, the stream
+   * ends/stops, or `timeoutMs` elapses — whichever comes first.
+   */
+  private async waitForBuffer(
+    state: StreamState,
+    targetSeconds: number,
+    timeoutMs: number,
+  ): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (
+      !state.stopped
+      && !state.ended
+      && StreamAudioPlayer.pendingDuration(state) < targetSeconds
+    ) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) return;
+      await new Promise<void>((resolve) => {
+        state.notify = resolve;
+        setTimeout(resolve, remaining);
+      });
+    }
+  }
+
   /**
    * Play a stream to completion. Resolves when the stream has ended and the
    * last scheduled buffer finished playing, or immediately after stop/drop.
@@ -135,6 +182,11 @@ class StreamAudioPlayer {
     const state = this.getState(streamId);
     state.playing = true;
     let nextStartTime = 0;
+    let underruns = 0;
+
+    // Jitter buffer: accumulate a little audio before the first sample so
+    // marginally-late chunks don't force an immediate underrun.
+    await this.waitForBuffer(state, INITIAL_BUFFER_S, INITIAL_WAIT_MS);
 
     try {
       for (;;) {
@@ -151,7 +203,11 @@ class StreamAudioPlayer {
           this.activeSources.add(source);
           source.onended = () => this.activeSources.delete(source);
 
-          nextStartTime = Math.max(nextStartTime, ctx.currentTime + SCHEDULE_LEAD_S);
+          // Re-anchor to the context clock only when genuinely behind;
+          // in-time chunks butt-join exactly at nextStartTime.
+          if (nextStartTime < ctx.currentTime + MIN_LEAD_S) {
+            nextStartTime = ctx.currentTime + MIN_LEAD_S;
+          }
           source.start(nextStartTime);
           nextStartTime += buffer.duration;
         } else if (state.ended) {
@@ -162,8 +218,15 @@ class StreamAudioPlayer {
           }
           return;
         } else {
-          // Buffer underrun — wait for the next chunk or end-of-stream.
-          await new Promise<void>((resolve) => { state.notify = resolve; });
+          // Underrun: generation is behind playback. Refill a growing
+          // cushion before resuming so a persistently slow stream causes
+          // a few clean pauses rather than a crack at every chunk.
+          const target = Math.min(
+            REFILL_BUFFER_S * 2 ** underruns,
+            MAX_REFILL_BUFFER_S,
+          );
+          underruns += 1;
+          await this.waitForBuffer(state, target, REFILL_WAIT_MS);
         }
       }
     } finally {
