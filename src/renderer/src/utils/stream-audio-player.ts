@@ -20,9 +20,6 @@ interface StreamState {
   stopped: boolean;
   playing: boolean;
   notify: (() => void) | null;
-  // Delivery-rate tracking for the adaptive initial gate.
-  firstChunkAt: number | null;
-  receivedSeconds: number;
 }
 
 // Matches the lipSyncScale boost applied to file-based playback in
@@ -32,27 +29,17 @@ const LIP_SYNC_SCALE = 2.0;
 // Only applied when we're genuinely behind — in-time chunks butt-join
 // sample-exactly at nextStartTime with no re-anchor.
 const MIN_LEAD_S = 0.02;
-// Jitter buffer tunables. A TTS server may deliver audio slower than
-// realtime early in a stream; any deficit has to surface as silence
-// somewhere. These parameters push it to the least disruptive places:
-// before speech starts (reads as "thinking") and, failing that, into a
-// single consolidated mid-speech pause rather than repeated gaps.
-//
-// Initial gate, phase 1: start playback once this much audio is buffered…
-const INITIAL_BUFFER_S = 0.35;
-// …but only if delivery is keeping up with realtime. Below this measured
-// production rate (audio-seconds per wall-second since the first chunk),
-// enter phase 2 and buffer further before starting.
-const HEALTHY_RATE = 0.95;
-// Initial gate, phase 2 target for slow streams.
-const SLOW_INITIAL_BUFFER_S = 1.0;
-// Wall-clock caps for each phase — play what we have rather than wait longer.
-const INITIAL_WAIT_MS = 700;
-const SLOW_INITIAL_WAIT_MS = 2000;
-// Underrun refill: one big cushion (or end-of-stream) so a slow stream
-// pauses at most once mid-speech instead of cracking chunk after chunk.
-const REFILL_BUFFER_S = 2.0;
-const REFILL_WAIT_MS = 2500;
+// Jitter cushion. A stream starts playing (and resumes after an underrun)
+// only once this much audio is buffered, so a delivery stall shorter than
+// the cushion can never split a word. Deterministic by design: if an
+// underrun still occurs, the cushion ratchets up for the rest of the
+// session, converging on the machine's actual worst-case jitter without
+// manual tuning. Streams that already ended start immediately, and a wall
+// cap bounds every wait so playback never hangs on a slow producer.
+const INITIAL_CUSHION_S = 0.6;
+const CUSHION_WAIT_CAP_MS = 1500;
+const CUSHION_RATCHET_S = 0.3;
+const CUSHION_MAX_S = 1.5;
 
 class StreamAudioPlayer {
   private ctx: AudioContext | null = null;
@@ -68,6 +55,11 @@ class StreamAudioPlayer {
   private dropped = new Set<string>();
 
   private activeSources = new Set<AudioBufferSourceNode>();
+
+  // Session-level jitter cushion; ratchets up on observed underruns.
+  private cushionS = INITIAL_CUSHION_S;
+
+  private underruns = 0;
 
   private ensureContext(): AudioContext {
     if (!this.ctx) {
@@ -92,8 +84,6 @@ class StreamAudioPlayer {
         stopped: false,
         playing: false,
         notify: null,
-        firstChunkAt: null,
-        receivedSeconds: 0,
       };
       this.streams.set(streamId, state);
     }
@@ -136,8 +126,6 @@ class StreamAudioPlayer {
     for (let i = 0; i < int16.length; i += 1) float32[i] = int16[i] / 32768.0;
 
     const state = this.getState(streamId);
-    if (state.firstChunkAt === null) state.firstChunkAt = performance.now();
-    state.receivedSeconds += float32.length / state.sampleRate;
     state.pending.push(float32);
     this.wake(state);
   }
@@ -198,19 +186,10 @@ class StreamAudioPlayer {
     state.playing = true;
     let nextStartTime = 0;
 
-    // Initial gate, phase 1: a small cushion so marginally-late chunks
-    // don't force an immediate underrun.
-    await this.waitForBuffer(state, INITIAL_BUFFER_S, INITIAL_WAIT_MS);
-    // Phase 2: if delivery is measurably slower than realtime, pay the
-    // deficit up front (reads as latency) instead of mid-speech (reads
-    // as broken audio). Fast servers skip this entirely.
-    if (!state.stopped && !state.ended && state.firstChunkAt !== null) {
-      const elapsed = (performance.now() - state.firstChunkAt) / 1000;
-      const rate = elapsed > 0.2 ? state.receivedSeconds / elapsed : Infinity;
-      if (rate < HEALTHY_RATE) {
-        await this.waitForBuffer(state, SLOW_INITIAL_BUFFER_S, SLOW_INITIAL_WAIT_MS);
-      }
-    }
+    // Deterministic gate: buffer a jitter cushion before the first sample,
+    // so a delivery stall shorter than the cushion can never split a word.
+    // Ended streams start immediately; the wall cap bounds the wait.
+    await this.waitForBuffer(state, this.cushionS, CUSHION_WAIT_CAP_MS);
 
     try {
       for (;;) {
@@ -242,10 +221,15 @@ class StreamAudioPlayer {
           }
           return;
         } else {
-          // Underrun: generation fell behind playback despite the initial
-          // gate. Refill one big cushion (or reach end-of-stream) so the
-          // stream pauses at most once instead of gapping repeatedly.
-          await this.waitForBuffer(state, REFILL_BUFFER_S, REFILL_WAIT_MS);
+          // Underrun despite the gate: the machine's jitter exceeds the
+          // cushion. Ratchet it up for the rest of the session so this
+          // converges to zero recurrences, then refill before resuming.
+          this.underruns += 1;
+          this.cushionS = Math.min(CUSHION_MAX_S, this.cushionS + CUSHION_RATCHET_S);
+          console.warn(
+            `[stream-audio] underrun #${this.underruns} — cushion → ${this.cushionS.toFixed(1)}s`,
+          );
+          await this.waitForBuffer(state, this.cushionS, CUSHION_WAIT_CAP_MS);
         }
       }
     } finally {
