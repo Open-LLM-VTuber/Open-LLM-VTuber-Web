@@ -20,6 +20,9 @@
           # electron-vite reads ELECTRON_EXEC_PATH before falling back to
           # node_modules/electron/dist/electron.
           ELECTRON_EXEC_PATH = "${pkgs.electron}/bin/electron";
+          # Tag audio streams so WirePlumber ducks Multimedia while the VTuber
+          # speaks (role-based ducking policy: nixos modules/features/audio.nix)
+          PULSE_PROP_OVERRIDE = "media.role=Assistant";
         };
       });
     };
