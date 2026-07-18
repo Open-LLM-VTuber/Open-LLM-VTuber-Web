@@ -45,6 +45,22 @@ const CUSHION_MAX_S = 1.5;
 // merely caught up with delivery — the normal state at ~1× realtime — and
 // simply waits for the next chunk while the scheduled runway plays out.
 const MIN_RUNWAY_S = 0.05;
+// The ratcheted cushion is persisted so each machine converges on its own
+// worst-case jitter once, instead of re-paying one underrun per session to
+// re-learn it.
+const CUSHION_STORAGE_KEY = 'stream-audio-cushion-s';
+
+function loadStoredCushion(): number {
+  try {
+    const stored = parseFloat(localStorage.getItem(CUSHION_STORAGE_KEY) ?? '');
+    if (!Number.isNaN(stored)) {
+      return Math.min(CUSHION_MAX_S, Math.max(INITIAL_CUSHION_S, stored));
+    }
+  } catch {
+    // localStorage unavailable — fall back to the default
+  }
+  return INITIAL_CUSHION_S;
+}
 
 class StreamAudioPlayer {
   private ctx: AudioContext | null = null;
@@ -61,8 +77,9 @@ class StreamAudioPlayer {
 
   private activeSources = new Set<AudioBufferSourceNode>();
 
-  // Session-level jitter cushion; ratchets up on observed underruns.
-  private cushionS = INITIAL_CUSHION_S;
+  // Machine-level jitter cushion; ratchets up on observed underruns and is
+  // persisted across sessions.
+  private cushionS = loadStoredCushion();
 
   private underruns = 0;
 
@@ -251,6 +268,11 @@ class StreamAudioPlayer {
             // converges to zero recurrences, then refill before resuming.
             this.underruns += 1;
             this.cushionS = Math.min(CUSHION_MAX_S, this.cushionS + CUSHION_RATCHET_S);
+            try {
+              localStorage.setItem(CUSHION_STORAGE_KEY, this.cushionS.toFixed(1));
+            } catch {
+              // localStorage unavailable — the ratchet still applies this session
+            }
             console.warn(
               `[stream-audio] underrun #${this.underruns} — cushion → ${this.cushionS.toFixed(1)}s`,
             );
