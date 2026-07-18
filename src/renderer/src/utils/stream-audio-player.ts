@@ -254,6 +254,14 @@ class StreamAudioPlayer {
     });
     this.streams.clear();
     this.dropped.clear();
+    // Release the audio device promptly instead of letting the context keep
+    // rendering silence until the browser's own silence timeout kicks in.
+    // play() resumes the context on the next stream, so this is transparent —
+    // but the OS sees the stream go idle immediately, which matters for
+    // audio-session policies keyed to stream activity (e.g. ducking).
+    if (this.ctx && this.ctx.state === 'running') {
+      this.ctx.suspend().catch(() => {});
+    }
   }
 
   /** Live RMS of whatever is currently audible, boosted for lip-sync. */
