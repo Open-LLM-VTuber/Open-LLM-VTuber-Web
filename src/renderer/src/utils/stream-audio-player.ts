@@ -40,6 +40,11 @@ const INITIAL_CUSHION_S = 0.6;
 const CUSHION_WAIT_CAP_MS = 1500;
 const CUSHION_RATCHET_S = 0.3;
 const CUSHION_MAX_S = 1.5;
+// Scheduled audio remaining (nextStartTime - currentTime) below which an
+// empty delivery queue counts as a real underrun. Above it, the player is
+// merely caught up with delivery — the normal state at ~1× realtime — and
+// simply waits for the next chunk while the scheduled runway plays out.
+const MIN_RUNWAY_S = 0.05;
 
 class StreamAudioPlayer {
   private ctx: AudioContext | null = null;
@@ -172,6 +177,18 @@ class StreamAudioPlayer {
   }
 
   /**
+   * Wait until anything about the stream changes (chunk arrival, end, stop)
+   * or `timeoutMs` elapses — whichever comes first.
+   */
+  private async waitForDelivery(state: StreamState, timeoutMs: number): Promise<void> {
+    if (state.stopped || state.ended || state.pending.length > 0) return;
+    await new Promise<void>((resolve) => {
+      state.notify = resolve;
+      setTimeout(resolve, timeoutMs);
+    });
+  }
+
+  /**
    * Play a stream to completion. Resolves when the stream has ended and the
    * last scheduled buffer finished playing, or immediately after stop/drop.
    * Intended to run as an audioTaskQueue task.
@@ -221,15 +238,24 @@ class StreamAudioPlayer {
           }
           return;
         } else {
-          // Underrun despite the gate: the machine's jitter exceeds the
-          // cushion. Ratchet it up for the rest of the session so this
-          // converges to zero recurrences, then refill before resuming.
-          this.underruns += 1;
-          this.cushionS = Math.min(CUSHION_MAX_S, this.cushionS + CUSHION_RATCHET_S);
-          console.warn(
-            `[stream-audio] underrun #${this.underruns} — cushion → ${this.cushionS.toFixed(1)}s`,
-          );
-          await this.waitForBuffer(state, this.cushionS, CUSHION_WAIT_CAP_MS);
+          const runway = nextStartTime - ctx.currentTime;
+          if (runway > MIN_RUNWAY_S) {
+            // Caught up with delivery, but scheduled audio still covers
+            // playback — the normal state at ~1× realtime delivery. Wait for
+            // the next chunk (or end/stop), bounded so a true stall falls
+            // through to the underrun branch before the runway runs dry.
+            await this.waitForDelivery(state, (runway - MIN_RUNWAY_S) * 1000);
+          } else {
+            // Underrun despite the gate: the machine's jitter exceeds the
+            // cushion. Ratchet it up for the rest of the session so this
+            // converges to zero recurrences, then refill before resuming.
+            this.underruns += 1;
+            this.cushionS = Math.min(CUSHION_MAX_S, this.cushionS + CUSHION_RATCHET_S);
+            console.warn(
+              `[stream-audio] underrun #${this.underruns} — cushion → ${this.cushionS.toFixed(1)}s`,
+            );
+            await this.waitForBuffer(state, this.cushionS, CUSHION_WAIT_CAP_MS);
+          }
         }
       }
     } finally {
