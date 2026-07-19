@@ -43,6 +43,7 @@ import { canvas, gl } from "./lappglmanager";
 import { LAppPal } from "./lapppal";
 import { TextureInfo } from "./lapptexturemanager";
 import { LAppWavFileHandler } from "./lappwavfilehandler";
+import { getStreamingLipSyncRms } from "../../src/utils/stream-audio-player";
 import { CubismMoc } from "@framework/model/cubismmoc";
 
 enum LoadStep {
@@ -616,6 +617,9 @@ export class LAppModel extends CubismUserModel {
       let value = 0.0;
       this._wavFileHandler.update(deltaTimeSeconds);
       value = this._wavFileHandler.getRms();
+      // Streamed (chunked PCM) playback bypasses the wav file handler;
+      // take whichever source is currently louder.
+      value = Math.max(value, getStreamingLipSyncRms());
       value = Math.min(1.0, value * 1.5);
 
       const lipSyncWeight = 4.0;

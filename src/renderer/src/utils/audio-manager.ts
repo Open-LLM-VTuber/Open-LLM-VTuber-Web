@@ -1,3 +1,5 @@
+import { streamAudioPlayer } from './stream-audio-player';
+
 /**
  * Global audio manager for handling audio playback and interruption
  * This ensures all components share the same audio reference
@@ -18,6 +20,10 @@ class AudioManager {
    * Stop current audio playback and lip sync
    */
   stopCurrentAudioAndLipSync() {
+    // Streamed (chunked PCM) playback is managed separately from the
+    // HTMLAudioElement path — always stop it too.
+    streamAudioPlayer.stopAll();
+
     if (this.currentAudio) {
       console.log('[AudioManager] Stopping current audio and lip sync');
       const audio = this.currentAudio;
