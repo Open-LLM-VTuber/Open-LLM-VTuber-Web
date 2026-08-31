@@ -11,6 +11,12 @@ let isQuitting = false;
 function setupIPC(): void {
   ipcMain.handle("get-platform", () => process.platform);
 
+  // Forward renderer console output to the main-process terminal so debug
+  // logging is visible without opening DevTools (pet-mode debugging).
+  ipcMain.on("renderer-log", (_event, ...args: unknown[]) => {
+    console.log("[renderer]", ...args);
+  });
+
   ipcMain.on("set-ignore-mouse-events", (_event, ignore: boolean) => {
     const window = windowManager.getWindow();
     if (window) {

@@ -44,6 +44,14 @@ const api = {
   updateComponentHover: (componentId: string, isHovering: boolean) => {
     ipcRenderer.send('update-component-hover', componentId, isHovering);
   },
+  log: (...args: unknown[]) => {
+    ipcRenderer.send('renderer-log', ...args);
+  },
+  onPetCursorPosition: (callback: (position: { x: number; y: number }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, position: { x: number; y: number }) => callback(position);
+    ipcRenderer.on('pet-cursor-position', handler);
+    return () => ipcRenderer.removeListener('pet-cursor-position', handler);
+  },
   onToggleInputSubtitle: (callback: () => void) => {
     const handler = (_event: any) => callback();
     ipcRenderer.on('toggle-input-subtitle', handler);

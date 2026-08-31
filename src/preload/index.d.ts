@@ -12,6 +12,8 @@ declare global {
       onMicToggle: (callback: () => void) => void
       onInterrupt: (callback: () => void) => void
       updateComponentHover: (componentId: string, isHovering: boolean) => void
+      onPetCursorPosition: (callback: (position: { x: number; y: number }) => void) => () => void
+      log: (...args: unknown[]) => void
       onToggleInputSubtitle: (callback: () => void) => void
       onToggleScrollToResize: (callback: () => void) => void
       onSwitchCharacter: (callback: (filename: string) => void) => void
