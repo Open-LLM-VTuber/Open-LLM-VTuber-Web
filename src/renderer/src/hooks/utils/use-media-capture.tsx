@@ -28,7 +28,7 @@ interface ImageData {
 export function useMediaCapture() {
   const { t } = useTranslation();
   const { stream: cameraStream } = useCamera();
-  const { stream: screenStream } = useScreenCaptureContext();
+  const { stream: screenStream, captureRegion } = useScreenCaptureContext();
 
   const getCompressionQuality = useCallback(() => {
     const storedQuality = localStorage.getItem(IMAGE_COMPRESSION_QUALITY_KEY);
@@ -68,7 +68,21 @@ export function useMediaCapture() {
     try {
       const bitmap = await imageCapture.grabFrame();
       const canvas = document.createElement('canvas');
-      let { width, height } = bitmap;
+
+      // Crop to the selected region when sharing only part of the screen.
+      // The region is normalized (0-1) to the captured stream.
+      let sx = 0;
+      let sy = 0;
+      let sw: number = bitmap.width;
+      let sh: number = bitmap.height;
+      if (source === 'screen' && captureRegion) {
+        sx = Math.round(captureRegion.x * bitmap.width);
+        sy = Math.round(captureRegion.y * bitmap.height);
+        sw = Math.max(1, Math.round(captureRegion.width * bitmap.width));
+        sh = Math.max(1, Math.round(captureRegion.height * bitmap.height));
+      }
+
+      let { width, height } = { width: sw, height: sh };
 
       const maxWidth = getImageMaxWidth();
       if (maxWidth > 0 && width > maxWidth) {
@@ -84,7 +98,7 @@ export function useMediaCapture() {
         return null;
       }
 
-      ctx.drawImage(bitmap, 0, 0, width, height);
+      ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height);
       const quality = getCompressionQuality();
       return canvas.toDataURL('image/jpeg', quality);
     } catch (error) {
@@ -96,7 +110,7 @@ export function useMediaCapture() {
       });
       return null;
     }
-  }, [t, getCompressionQuality, getImageMaxWidth]);
+  }, [t, getCompressionQuality, getImageMaxWidth, captureRegion]);
 
   const captureAllMedia = useCallback(async () => {
     const images: ImageData[] = [];

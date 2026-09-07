@@ -29,6 +29,11 @@ import Background from "./components/canvas/background";
 import WebSocketStatus from "./components/canvas/ws-status";
 import Subtitle from "./components/canvas/subtitle";
 import { ModeProvider, useMode } from "./context/mode-context";
+import { SharePickerPage } from "./components/share-picker/share-picker-page";
+
+// The share-picker BrowserWindow loads the same renderer bundle with this
+// flag; it renders only the source/region picker instead of the main app.
+const isSharePickerWindow = new URLSearchParams(window.location.search).has('share-picker');
 
 function AppContent(): JSX.Element {
   const [showSidebar, setShowSidebar] = useState(true);
@@ -156,6 +161,14 @@ function AppContent(): JSX.Element {
 }
 
 function App(): JSX.Element {
+  if (isSharePickerWindow) {
+    return (
+      <ChakraProvider value={defaultSystem}>
+        <SharePickerPage />
+      </ChakraProvider>
+    );
+  }
+
   return (
     <ChakraProvider value={defaultSystem}>
       {/* ModeProvider needs to wrap AppContent to provide mode to getGlobalStyles */}

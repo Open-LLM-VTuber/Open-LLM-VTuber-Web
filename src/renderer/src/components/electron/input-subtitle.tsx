@@ -16,6 +16,7 @@ import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
 import { useDraggable } from '@/hooks/electron/use-draggable';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
+import { ScreenShareButton } from './screen-share-button';
 
 export function InputSubtitle() {
   const {
@@ -162,6 +163,7 @@ export function InputSubtitle() {
             </Flex>
 
             <Flex gap="2">
+              <ScreenShareButton />
               <IconButton
                 aria-label="Toggle microphone"
                 onClick={handleMicToggle}
