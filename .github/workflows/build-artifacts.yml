@@ -1,0 +1,85 @@
+name: Build Artifacts
+
+# 手动触发，在线打包 Linux 二进制 (AppImage/deb) 与 Windows exe (NSIS 安装包/便携版)
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Select platforms to build'
+        type: choice
+        required: true
+        default: 'linux,windows'
+        options:
+          - 'linux,windows'
+          - 'linux'
+          - 'windows'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    if: ${{ contains(inputs.platforms, matrix.platform) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build renderer & main process (electron-vite)
+        run: npm run build
+
+      - name: Package Linux (AppImage + deb)
+        if: matrix.platform == 'linux'
+        run: npx electron-builder --linux AppImage deb --publish never
+
+      - name: Package Windows (NSIS setup + portable)
+        if: matrix.platform == 'windows'
+        run: npx electron-builder --win nsis portable --publish never
+
+      - name: List output files
+        run: ls -R release || true
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-llm-vtuber-linux-x64
+          path: |
+            release/**/*.AppImage
+            release/**/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-llm-vtuber-windows-x64
+          path: |
+            release/**/*.exe
+          if-no-files-found: error
+          retention-days: 14
