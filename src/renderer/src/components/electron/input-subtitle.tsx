@@ -11,11 +11,12 @@ import {
   VStack,
   IconButton,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
 import { useDraggable } from '@/hooks/electron/use-draggable';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
+import { ScreenShareButton } from './screen-share-button';
 
 export function InputSubtitle() {
   const {
@@ -47,6 +48,41 @@ export function InputSubtitle() {
   });
 
   const [isVisible, setIsVisible] = useState(true);
+
+  // Used by the Linux/Windows cursor-poll fallback below so the hover state
+  // stays accurate while the window is click-through (no real mouse events).
+  const isSubtitleHoveredRef = useRef(false);
+  const isVisibleRef = useRef(isVisible);
+  useEffect(() => {
+    isVisibleRef.current = isVisible;
+  }, [isVisible]);
+
+  // Linux/Windows: while the pet window ignores mouse events the renderer gets
+  // no enter/leave events; the main process polls the cursor and forwards its
+  // window-local position here, so hovering/clicking the subtitle still works.
+  useEffect(() => {
+    if (!isPet) return undefined;
+    const unsubscribe = (window.api as any)?.onPetCursorPosition?.(
+      (position: { x: number; y: number }) => {
+        const container = elementRef.current;
+        if (!container || !isVisibleRef.current) {
+          if (isSubtitleHoveredRef.current) {
+            isSubtitleHoveredRef.current = false;
+            (window.api as any)?.updateComponentHover('input-subtitle', false);
+          }
+          return;
+        }
+        const target = document.elementFromPoint(position.x, position.y);
+        const hovered = target !== null && container.contains(target);
+        // [PetDebug] renderer: subtitle hover -> ${hovered}
+        if (hovered !== isSubtitleHoveredRef.current) {
+          isSubtitleHoveredRef.current = hovered;
+          (window.api as any)?.updateComponentHover('input-subtitle', hovered);
+        }
+      },
+    );
+    return unsubscribe;
+  }, [isPet]);
 
   const handleClose = useCallback(() => {
     if (isPet) {
@@ -127,6 +163,7 @@ export function InputSubtitle() {
             </Flex>
 
             <Flex gap="2">
+              <ScreenShareButton />
               <IconButton
                 aria-label="Toggle microphone"
                 onClick={handleMicToggle}

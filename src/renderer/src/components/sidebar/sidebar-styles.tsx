@@ -302,6 +302,34 @@ export const sidebarStyles = {
       borderRadius: '8px',
       display: 'block',
     } as const,
+    // Wrapper sized to the video aspect ratio so the region overlay stays
+    // pixel-aligned with the actual captured stream.
+    videoWrapper: {
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: '8px',
+      bg: 'black',
+      flexShrink: 0,
+      touchAction: 'none' as const,
+    } as const,
+    actionRow: {
+      display: 'flex',
+      gap: 2,
+      flexWrap: 'wrap' as const,
+      alignItems: 'center',
+      mt: 3,
+      width: '100%',
+    },
+    statusText: {
+      fontSize: 'xs',
+      color: 'whiteAlpha.600',
+      mt: 2,
+      width: '100%',
+      textAlign: 'center',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
   },
 
   // Add Browser Panel Styles

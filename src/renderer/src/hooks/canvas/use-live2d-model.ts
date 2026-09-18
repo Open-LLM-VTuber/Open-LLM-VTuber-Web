@@ -241,6 +241,49 @@ export const useLive2DModel = ({
     }
   }, [canvasRef, modelInfo]);
 
+  // Unified pet-mode hover hit-test, usable both from real mouse events and
+  // from the polled cursor position pushed by the main process (Linux/Windows,
+  // where an ignoring window receives no mouse events — see startPetCursorPolling).
+  const updatePetModelHover = useCallback((clientX: number, clientY: number) => {
+    if (!isPet || isDragging || isPotentialTapRef.current) return;
+    const adapter = (window as any).getLAppAdapter?.();
+    const view = LAppDelegate.getInstance().getView();
+    const model = adapter?.getModel();
+    if (!adapter || !view || !model || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const scale = canvas.width / canvas.clientWidth;
+    const scaledX = x * scale;
+    const scaledY = y * scale;
+    const modelX = view._deviceToScreen.transformX(scaledX);
+    const modelY = view._deviceToScreen.transformY(scaledY);
+
+    const currentHitState = model.anyhitTest(modelX, modelY) !== null || model.isHitOnModel(modelX, modelY);
+
+    if (currentHitState !== isHoveringModelRef.current) {
+      isHoveringModelRef.current = currentHitState;
+      // [PetDebug] renderer: model hover -> ${currentHitState}
+      electronApi?.ipcRenderer.send('update-component-hover', 'live2d-model', currentHitState);
+    }
+  }, [isPet, isDragging, electronApi, canvasRef]);
+
+  // Linux/Windows: while the pet window ignores mouse events, the renderer gets
+  // no mousemove events; the main process polls the cursor and forwards its
+  // window-local position here so hover (and therefore interaction) still works.
+  useEffect(() => {
+    if (!isPet) return undefined;
+    const unsubscribe = (window as any).api?.onPetCursorPosition?.(
+      (position: { x: number; y: number }) => {
+        // [PetDebug] renderer: pet-cursor-position ${JSON.stringify(position)}
+        updatePetModelHover(position.x, position.y);
+      },
+    );
+    return unsubscribe;
+  }, [isPet, updatePetModelHover]);
+
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const adapter = (window as any).getLAppAdapter?.();
     const view = LAppDelegate.getInstance().getView();
@@ -311,27 +354,10 @@ export const useLive2DModel = ({
     }
     // --- End Continue Drag Logic ---
 
-    // --- Pet Hover Logic (Unchanged) ---
-    if (isPet && !isDragging && !isPotentialTapRef.current && electronApi && adapter && view && model && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const scale = canvas.width / canvas.clientWidth;
-      const scaledX = x * scale;
-      const scaledY = y * scale;
-      const modelX = view._deviceToScreen.transformX(scaledX);
-      const modelY = view._deviceToScreen.transformY(scaledY);
-
-      const currentHitState = model.anyhitTest(modelX, modelY) !== null || model.isHitOnModel(modelX, modelY);
-
-      if (currentHitState !== isHoveringModelRef.current) {
-        isHoveringModelRef.current = currentHitState;
-        electronApi.ipcRenderer.send('update-component-hover', 'live2d-model', currentHitState);
-      }
-    }
+    // --- Pet Hover Logic ---
+    updatePetModelHover(e.clientX, e.clientY);
     // --- End Pet Hover Logic ---
-  }, [isPet, isDragging, electronApi, canvasRef]);
+  }, [isPet, isDragging, electronApi, canvasRef, updatePetModelHover]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     const adapter = (window as any).getLAppAdapter?.();
