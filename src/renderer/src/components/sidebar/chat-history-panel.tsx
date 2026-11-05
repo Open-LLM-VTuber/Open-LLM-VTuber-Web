@@ -101,6 +101,7 @@ function ChatHistoryPanel(): JSX.Element {
                     key={msg.id}
                     model={{
                       message: msg.content,
+                      type: 'text',
                       sentTime: msg.timestamp,
                       sender: msg.role === 'ai'
                         ? (msg.name || confName || 'AI')
